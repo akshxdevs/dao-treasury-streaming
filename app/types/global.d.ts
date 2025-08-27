@@ -24,3 +24,5 @@ declare global {
     balance: number;
   }
 }
+
+export {};
