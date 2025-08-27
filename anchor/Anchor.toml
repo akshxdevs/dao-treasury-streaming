@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-doa_treasury = "DhLLJR45XC9jGSgSigAi86SWf4qzZkztc1iayFQDAj8u"
+anchor_prac = "92KUjGGCrEM6kcnMd4pgze3EPnS3PwsXhpDeLB9vGpE9"
 
 [registry]
 url = "https://api.apr.dev"
