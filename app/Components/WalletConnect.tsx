@@ -9,7 +9,6 @@ import toast from "react-hot-toast";
 interface WalletConnectProps {
   onConnect?: (address: String) => void;
 }
-
 export default function WalletConnect({ onConnect }: WalletConnectProps) {
   const { publicKey, connected } = useWallet();
   const [copied, setCopied] = useState(false);
@@ -24,27 +23,23 @@ export default function WalletConnect({ onConnect }: WalletConnectProps) {
       toast.error("Failed to copy address!");
     }
   };
-  const shortAddress = (address:string) => {
-    return `${address.slice(0,4)}...${address.slice(-4)}`
-  }
+
   if (connected && publicKey) {
     return (
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-3">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse transition-transform duration-100"></div>
-          <span className="font-semibold text-lg">Connected</span>
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse transition-transform duration-100"></div>
         </div>
-        <button onClick={copyAddress} className="flex space-x-3 items-center">
-          <span className="border border-gray-700 p-2 rounded-lg">{shortAddress(publicKey.toString())}</span>
-          {copied ? <Check /> : <Copy />}
+        <button onClick={copyAddress} className="flex space-x-3 items-center bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg transition-colors">
+          {copied ? <Check className="text-green-400" /> : <Copy className="text-gray-400" />}
         </button>
-        <WalletMultiButton />
+        <WalletMultiButton className="!bg-green-600 hover:!bg-green-700 !text-white" />
       </div>
     );
   }
   return (
     <div>
-      <WalletMultiButton className="" />
+      <WalletMultiButton className="!bg-green-600 hover:!bg-green-700 !text-white" />
     </div>
   );
 }
