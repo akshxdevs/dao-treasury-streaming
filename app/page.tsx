@@ -205,6 +205,14 @@ export default function Home() {
 
       const tx = await anchorClient.withdrawal(MOCK_TOKEN_MINT, stakingRecord.amount);
       
+      // Calculate what the user would receive
+      let receivedAmount = stakingRecord.amount;
+      if (stakingTimeInfo?.penaltyPeriod) {
+        receivedAmount = stakingRecord.amount * 0.9; // 10% fee
+      } else if (stakingTimeInfo?.canGetReward) {
+        receivedAmount = stakingRecord.amount * 2; // 2x reward
+      }
+      
       // Update staking record status
       setUserStaking(prev => prev.map(stake => 
         stake.id === stakingRecord.id 
@@ -212,10 +220,11 @@ export default function Home() {
           : stake
       ));
       
-      await fetchUserBalance();
+      // Simulate balance update for demo
+      setUserBalance(prev => prev + receivedAmount);
+      setStaking(false);
       await fetchStakingTimeInfo();
-      
-      toast.success(`Withdrawal simulation successful! Transaction: ${tx?.slice(0, 8)}...`);
+      toast.success(`Withdrawal simulation successful! You would receive ${receivedAmount.toFixed(4)} SOL. Transaction: ${tx?.slice(0, 8)}...`);
     } catch (error: any) {
       console.error("Withdrawal error:", error);
       toast.error(error.message || "Transaction failed. Please try again.");
@@ -232,7 +241,8 @@ export default function Home() {
             <p className="text-gray-300 text-lg">Stake your tokens and earn rewards</p>
             <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
               <p className="text-yellow-400 text-sm">
-                ⚠️ Demo Mode: Withdrawals are simulated. Connect to actual program for real transactions.
+                ⚠️ Demo Mode: Withdrawals are simulated. Balance updates are for demonstration only. 
+                Connect to actual program for real SOL transfers.
               </p>
             </div>
           </div>
