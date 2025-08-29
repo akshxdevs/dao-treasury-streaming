@@ -220,11 +220,10 @@ export default function Home() {
           : stake
       ));
       
-      // Simulate balance update for demo
-      setUserBalance(prev => prev + receivedAmount);
       setStaking(false);
+      await fetchUserBalance(); // Refresh real balance
       await fetchStakingTimeInfo();
-      toast.success(`Withdrawal simulation successful! You would receive ${receivedAmount.toFixed(4)} SOL. Transaction: ${tx?.slice(0, 8)}...`);
+      toast.success(`Withdrawal simulation successful! You would receive ${receivedAmount.toFixed(4)} SOL. Check your wallet for the transaction!`);
     } catch (error: any) {
       console.error("Withdrawal error:", error);
       toast.error(error.message || "Transaction failed. Please try again.");
@@ -241,8 +240,8 @@ export default function Home() {
             <p className="text-gray-300 text-lg">Stake your tokens and earn rewards</p>
             <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
               <p className="text-yellow-400 text-sm">
-                ⚠️ Demo Mode: Withdrawals are simulated. Balance updates are for demonstration only. 
-                Connect to actual program for real SOL transfers.
+                ⚠️ Demo Mode: Withdrawals show real transactions in your wallet for demonstration. 
+                Connect to actual program for real SOL transfers from vault.
               </p>
             </div>
           </div>
