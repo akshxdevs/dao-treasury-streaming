@@ -8,11 +8,11 @@ declare_id!("92KUjGGCrEM6kcnMd4pgze3EPnS3PwsXhpDeLB9vGpE9");
 pub mod anchor_prac {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, lock_duration: i64) -> Result<()> {
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
         ctx.accounts.vault.owner = ctx.accounts.user.key();
         ctx.accounts.vault.amount = 0;
         ctx.accounts.vault.bump = ctx.bumps.vault;
-        ctx.accounts.vault.unlock_time = Clock::get()?.unix_timestamp + lock_duration;
+        ctx.accounts.vault.unlock_time = Clock::get()?.unix_timestamp + 86400;
         Ok(())
     }
 

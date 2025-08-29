@@ -16,12 +16,19 @@ declare global {
     NEXT_PUBLIC_PROGRAM_ID?: string;
     NEXT_PUBLIC_NETWORK?: "devnet" | "mainnet-beta" | "testnet";
   }
-  interface TreasuryData {
+  interface Vault {
     publicKey: string;
   }
   interface UserProfile {
     publicKey: string;
     balance: number;
+    unlockTime: number;
+    amount: number;
+    tokenAccounts: {
+      user: string;
+      vault: string;
+      treasury: string;
+    };  
   }
 }
 
