@@ -1,4 +1,4 @@
-import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
+import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT } from "@solana/spl-token";
 import { WalletAdapter } from "@solana/wallet-adapter-base";
 import { clusterApiUrl, Connection, Keypair, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -35,47 +35,47 @@ export class AnchorCLient {
     }
   }
   
-  async deposit(amount: number, mintAddress: string) {
+  async deposit(amount: number) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
-      
-      console.log("Starting deposit process...");
-      console.log("Amount:", amount);
-      console.log("Mint address:", mintAddress);
-      console.log("User public key:", this.wallet.publicKey.toString());
-      
-      // For now, let's just simulate the deposit since we're using native SOL
-      // In a real implementation, you'd convert SOL to wrapped SOL first
       
       const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
         PROGRAM_ID
       );
       
-      console.log("Vault address:", vault.toString());
+      const transaction = new Transaction();
+      const transferSolInstruction = SystemProgram.transfer({
+        fromPubkey: this.wallet.publicKey,
+        toPubkey: vault,
+        lamports: amount * LAMPORTS_PER_SOL
+      });
+      transaction.add(transferSolInstruction);
       
-      // Check user's SOL balance
-      const solBalance = await this.connection.getBalance(this.wallet.publicKey);
-      const userBalanceAmount = solBalance / LAMPORTS_PER_SOL;
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = this.wallet.publicKey;
+      transaction.lastValidBlockHeight = lastValidBlockHeight;
       
-      console.log("User SOL balance:", userBalanceAmount);
-      console.log("Requested amount:", amount);
+      const signature = await this.wallet.sendTransaction(transaction, this.connection, {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+        maxRetries: 3
+      });
       
-      if (userBalanceAmount < amount) {
-        throw new Error(`Insufficient SOL balance. You have ${userBalanceAmount.toFixed(4)} SOL, but trying to stake ${amount}`);
+      const confirmation = await this.connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      });
+      
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
-      
-      // For now, just return a mock transaction signature
-      // In a real implementation, you would:
-      // 1. Convert SOL to wrapped SOL
-      // 2. Transfer wrapped SOL to vault
-      const mockSignature = "mock_transaction_" + Date.now();
-      
-      console.log("Mock deposit transaction successful:", mockSignature);
-      return mockSignature;
+      return signature;
       
     } catch (error) {
-      console.error("Deposit error:", error);
+      console.error("Staking error:", error);
       if (error instanceof Error) {
         throw new Error(`Transaction failed: ${error.message}`);
       }
@@ -147,6 +147,31 @@ export class AnchorCLient {
     } catch (error) {
       console.error("Get treasury balance error:", error);
       throw error;
+    }
+  }
+
+  async getStakedBalance(mintAddress: string) {
+    try {
+      if (!this.wallet.publicKey) throw new Error("Wallet not connected");
+      
+      const mint = new PublicKey(mintAddress);
+      const [vault] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
+        PROGRAM_ID
+      );
+      const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
+      
+      // Check if vault token account exists
+      const vaultTokenAccount = await this.connection.getAccountInfo(vaultAta);
+      if (!vaultTokenAccount) {
+        return "0"; // No staked balance if vault doesn't exist
+      }
+      
+      const balance = await this.connection.getTokenAccountBalance(vaultAta);
+      return balance.value.amount;
+    } catch (error) {
+      console.error("Get staked balance error:", error);
+      return "0";
     }
   }
 }

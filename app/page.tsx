@@ -7,7 +7,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// Mock token mint address - using wrapped SOL
 const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112"; // Wrapped SOL
 
 interface StakingRecord {
@@ -25,6 +24,7 @@ export default function Home() {
   const [anchorClient, setAnchorClient] = useState<AnchorCLient | null>(null);
   const [amount, setAmount] = useState<number>(0);
   const [userBalance, setUserBalance] = useState<number>(0);
+  const [stakedBalance, setStakedBalance] = useState<number>(0);
   const [userStaking, setUserStaking] = useState<StakingRecord[]>([]);
   const [staking, setStaking] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -47,6 +47,7 @@ export default function Home() {
   useEffect(() => {
     if (anchorClient) {
       fetchUserBalance();
+      fetchStakedBalance();
     }
   }, [anchorClient, publicKey]);
 
@@ -55,14 +56,23 @@ export default function Home() {
     try {
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
       const connection = new Connection(rpcUrl, "confirmed");
-      
-      // Just check native SOL balance for now
       const balanceInLamports = await connection.getBalance(publicKey);
       const balance = (balanceInLamports / LAMPORTS_PER_SOL);
       setUserBalance(balance);
     } catch (error) {
       console.error("Failed to fetch SOL balance:", error);
       setUserBalance(0);
+    }
+  };
+
+  const fetchStakedBalance = async () => {
+    if (!anchorClient || !publicKey) return;
+    try {
+      const stakedAmount = await anchorClient.getStakedBalance(MOCK_TOKEN_MINT);
+      setStakedBalance(Number(stakedAmount) / LAMPORTS_PER_SOL);
+    } catch (error) {
+      console.error("Failed to fetch staked balance:", error);
+      setStakedBalance(0);
     }
   };
 
@@ -84,7 +94,7 @@ export default function Home() {
 
     try {
       setStaking(true);
-      const tx = await anchorClient?.deposit(amount, MOCK_TOKEN_MINT);
+      const tx = await anchorClient?.deposit(amount);
       
       const newStaking: StakingRecord = {
         id: Date.now().toString(),
@@ -93,14 +103,13 @@ export default function Home() {
         status: 'active',
         transactionHash: tx || 'unknown'
       };
-      
       setUserStaking(prev => [newStaking, ...prev]);
       setAmount(0);
       setAcceptedTerms(false);
       setShowfield(false);
       
-      // Refresh balance
       await fetchUserBalance();
+      await fetchStakedBalance();
       
       toast.success(`Staking successful! Transaction: ${tx?.slice(0, 8)}...`);
     } catch (error: any) {
@@ -126,7 +135,8 @@ export default function Home() {
           {connected && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-2">Your Balance</h2>
-              <p className="text-3xl font-bold text-green-400">{userBalance} SOL</p>
+              <p className="text-3xl font-bold text-green-400">Available: {userBalance} SOL</p>
+              <p className="text-3xl font-bold text-green-400">Staked: {stakedBalance} SOL</p>
             </div>
           )}
 
@@ -155,6 +165,13 @@ export default function Home() {
                         min="0"
                         step="0.0001"
                       />
+                      {amount > 0 && (
+                        <div className="mt-2 text-sm text-gray-400">
+                          <p>Staking amount: {amount} SOL</p>
+                          <p>Estimated fees: ~0.005 SOL (first time: ~0.007 SOL)</p>
+                          <p className="text-yellow-400">Total required: ~{(amount + 0.005).toFixed(3)} SOL</p>
+                        </div>
+                      )}
                     </div>
                     
                     {!showTerms && (
