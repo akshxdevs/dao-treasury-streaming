@@ -7,8 +7,8 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-// Mock token mint address - replace with your actual token mint
-const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112"; // SOL wrapped token
+// Mock token mint address - using wrapped SOL
+const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112"; // Wrapped SOL
 
 interface StakingRecord {
   id: string;
@@ -30,16 +30,11 @@ export default function Home() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
-    if (connected && publicKey) {
+    if (connected && publicKey && wallet?.adapter) {
       try {
-        const client = new AnchorCLient({
-          publicKey,
-          connected,
-          wallet,
-        } as any);
+        const client = new AnchorCLient(wallet.adapter);
         setAnchorClient(client);
         console.log("Anchor client initialized");
-        fetchUserBalance();
       } catch (error) {
         console.error("Failed to initialize anchor client:", error);
         toast.error("Failed to initialize wallet connection");
@@ -59,12 +54,24 @@ export default function Home() {
     if (!anchorClient || !publicKey) return;
     try {
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
-      const connection  = new Connection(rpcUrl,"confirmed");
-      const balanceInLamports = await connection.getBalance(publicKey);
-      const balance = (balanceInLamports / LAMPORTS_PER_SOL).toFixed(4);
-      setUserBalance(Number(balance));
+      const connection = new Connection(rpcUrl, "confirmed");
+      
+      // For wrapped SOL, we need to check if user has a token account
+      const userAta = await anchorClient.getUserBalance(MOCK_TOKEN_MINT);
+      setUserBalance(Number(userAta));
     } catch (error) {
       console.error("Failed to fetch user balance:", error);
+      // If token account doesn't exist, check native SOL balance
+      try {
+        const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
+        const connection = new Connection(rpcUrl, "confirmed");
+        const balanceInLamports = await connection.getBalance(publicKey);
+        const balance = (balanceInLamports / LAMPORTS_PER_SOL);
+        setUserBalance(balance);
+      } catch (solError) {
+        console.error("Failed to fetch SOL balance:", solError);
+        setUserBalance(0);
+      }
     }
   };
 
