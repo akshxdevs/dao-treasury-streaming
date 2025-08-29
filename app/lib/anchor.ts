@@ -92,7 +92,17 @@ export class AnchorCLient {
         PROGRAM_ID
       );
 
+      // Get vault account info to check timing
+      const vaultAccount = await this.connection.getAccountInfo(vault);
+      if (!vaultAccount) {
+        throw new Error("Vault not found");
+      }
+
+      // Call the program's withdraw instruction
       const tx = new Transaction();
+      
+      // We'll need to call the program's withdraw instruction here
+      // For now, using the basic transfer as placeholder
       const transferInstruction = SystemProgram.transfer({
         fromPubkey: vault,
         toPubkey: this.wallet.publicKey,
@@ -124,6 +134,63 @@ export class AnchorCLient {
     } catch (error) {
       console.error("Withdrawal error:", error);
       throw error;
+    }
+  }
+
+  // New function to get staking time information
+  async getStakingTimeInfo() {
+    try {
+      if (!this.wallet.publicKey) throw new Error("Wallet not connected");
+      
+      const [vault] = PublicKey.findProgramAddressSync(
+        [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
+        PROGRAM_ID
+      );
+
+      const vaultAccount = await this.connection.getAccountInfo(vault);
+      if (!vaultAccount) {
+        return null;
+      }
+
+      // Parse vault data (you'll need to implement proper deserialization)
+      // For now, returning mock data
+      const currentTime = Math.floor(Date.now() / 1000);
+      const stakeTime = currentTime - 86400; // Mock: staked 24 hours ago
+      const unlockTime = stakeTime + 86400; // 24 hours from stake
+      const rewardTime = stakeTime + 2592000; // 30 days from stake
+
+      return {
+        stakeTime,
+        unlockTime,
+        rewardTime,
+        currentTime,
+        timeUntilUnlock: Math.max(0, unlockTime - currentTime),
+        timeUntilReward: Math.max(0, rewardTime - currentTime),
+        canWithdraw: currentTime >= unlockTime,
+        canGetReward: currentTime >= rewardTime,
+        penaltyPeriod: currentTime < unlockTime,
+        lockPeriod: currentTime >= unlockTime && currentTime < rewardTime
+      };
+    } catch (error) {
+      console.error("Get staking time info error:", error);
+      throw error;
+    }
+  }
+
+  // Function to format time remaining
+  formatTimeRemaining(seconds: number): string {
+    if (seconds <= 0) return "Ready";
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
     }
   }
   

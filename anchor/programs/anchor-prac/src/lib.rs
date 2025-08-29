@@ -12,7 +12,9 @@ pub mod anchor_prac {
         ctx.accounts.vault.owner = ctx.accounts.user.key();
         ctx.accounts.vault.amount = 0;
         ctx.accounts.vault.bump = ctx.bumps.vault;
-        ctx.accounts.vault.unlock_time = Clock::get()?.unix_timestamp + 86400;
+        ctx.accounts.vault.stake_time = Clock::get()?.unix_timestamp;
+        ctx.accounts.vault.unlock_time = Clock::get()?.unix_timestamp + 86400; // 24 hours
+        ctx.accounts.vault.reward_time = Clock::get()?.unix_timestamp + 2592000; // 30 days
         Ok(())
     }
 
@@ -48,11 +50,12 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
     let seeds = &[&signer_seeds[..]];
 
     // Debug: Print current time vs unlock time
-    msg!("Current time: {}, Unlock time: {}", clock.unix_timestamp, vault.unlock_time);
+    msg!("Current time: {}, Unlock time: {}, Reward time: {}", 
+         clock.unix_timestamp, vault.unlock_time, vault.reward_time);
     
     if clock.unix_timestamp < vault.unlock_time {
-        msg!("Applying penalty - withdrawing early");
-        // 10% fee if before unlock
+        msg!("Applying penalty - withdrawing before 24 hours");
+        // 10% fee if before 24 hours
         let fee_amount = total_amount / 10;
         let user_amount = total_amount - fee_amount;
 
@@ -79,9 +82,20 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
             seeds,
         );
         token::transfer(cpi_ctx_user, user_amount)?;
+        
+        // Mark vault as empty
+        vault.amount = 0;
+        
+    } else if clock.unix_timestamp < vault.reward_time {
+        msg!("Locked until 30 days - cannot withdraw yet");
+        return err!(CustomError::VaultLocked);
+        
     } else {
-        msg!("No penalty - withdrawing after lock time");
-        // No fee - transfer full amount to user
+        msg!("Reward time reached - doubling the amount");
+        // Double the amount after 30 days
+        let reward_amount = total_amount * 2;
+        
+        // Transfer doubled amount to user
         let cpi_ctx_user = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             Transfer {
@@ -91,11 +105,11 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
             },
             seeds,
         );
-        token::transfer(cpi_ctx_user, total_amount)?;
+        token::transfer(cpi_ctx_user, reward_amount)?;
+        
+        // Mark vault as empty
+        vault.amount = 0;
     }
-
-    // Mark vault as empty
-    vault.amount = 0;
 
     Ok(())
 }
@@ -107,7 +121,9 @@ pub struct Vault {
     pub owner: Pubkey,
     pub bump: u8,
     pub amount: u64,
+    pub stake_time: i64,
     pub unlock_time: i64,
+    pub reward_time: i64,
 }
 
 #[derive(Accounts)]
@@ -118,7 +134,7 @@ pub struct Initialize<'info> {
         seeds = [b"vault", user.key().as_ref()],
         bump,
         payer = user,
-        space = 8 + 32 + 1 + 8 + 8,
+        space = 8 + 32 + 1 + 8 + 8 + 8 + 8,
     )]
     pub vault: Account<'info, Vault>,
     #[account(mut)]
