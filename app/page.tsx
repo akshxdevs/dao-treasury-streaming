@@ -82,9 +82,9 @@ export default function Home() {
         if (stakingTimeInfo.penaltyPeriod) {
           setTimeRemaining(`Early withdrawal available: ${anchorClient?.formatTimeRemaining(timeUntilUnlock) || ""} left`);
         } else if (stakingTimeInfo.lockPeriod) {
-          setTimeRemaining(`Locked: ${anchorClient?.formatTimeRemaining(timeUntilReward) || ""} until normal withdrawal`);
+          setTimeRemaining(`Locked: ${anchorClient?.formatTimeRemaining(timeUntilReward) || ""} until 2x reward`);
         } else {
-          setTimeRemaining("Ready for normal withdrawal");
+          setTimeRemaining("Ready for 2x reward withdrawal");
         }
       }, 1000);
 
@@ -186,16 +186,20 @@ export default function Home() {
           toast.error("Cannot withdraw! Your tokens are locked for 30 days from staking date.");
           return;
         } else if (stakingTimeInfo.canGetReward) {
-          // After 30 days - normal withdrawal
+          // After 30 days - 2x reward
+          const rewardAmount = stakingRecord.amount * 2;
+          
           const confirmed = window.confirm(
-            `30 days completed! Normal withdrawal.\n\n` +
-            `Amount to withdraw: ${stakingRecord.amount} SOL\n\n` +
+            `Congratulations! 30 days completed!\n\n` +
+            `Original amount: ${stakingRecord.amount} SOL\n` +
+            `Reward: ${stakingRecord.amount} SOL\n` +
+            `Total you will receive: ${rewardAmount} SOL (2x)\n\n` +
             `Continue with withdrawal?`
           );
           
           if (!confirmed) return;
           
-          toast.success("Processing normal withdrawal...");
+          toast.success("Processing withdrawal with 2x reward...");
         }
       }
 
@@ -294,7 +298,7 @@ export default function Home() {
                         <div className="text-sm text-gray-300 space-y-2 mb-4 max-h-62">
                           <p>• <strong>Early Withdrawal (within 24 hours):</strong> Available with 10% fee</p>
                           <p>• <strong>Lock Period (24 hours - 30 days):</strong> Tokens are locked, no withdrawal allowed</p>
-                          <p>• <strong>Normal Withdrawal (after 30 days):</strong> Full amount returned</p>
+                          <p>• <strong>Reward Period (after 30 days):</strong> Receive 2x your staked amount</p>
                           <p>• <strong>Minimum staking period:</strong> 24 hours</p>
                           <p>• <strong>Maximum staking period:</strong> 30 days</p>
                           <p>• <strong>Maximum staking amount:</strong> 1000 SOL</p>
@@ -357,7 +361,7 @@ export default function Home() {
                         <p className="text-sm text-yellow-400">🔒 Locked for 30 days</p>
                       )}
                       {stakingTimeInfo.canGetReward && (
-                        <p className="text-sm text-green-400">✅ Ready for normal withdrawal</p>
+                        <p className="text-sm text-green-400">🎉 Ready for 2x reward!</p>
                       )}
                     </div>
                   </div>
@@ -394,7 +398,7 @@ export default function Home() {
                               <p className="text-yellow-400">Locked for 30 days</p>
                             )}
                             {stakingTimeInfo.canGetReward && (
-                              <p className="text-green-400">Normal withdrawal: {staking.amount} SOL</p>
+                              <p className="text-green-400">2x Reward: {staking.amount * 2} SOL</p>
                             )}
                           </div>
                         )}

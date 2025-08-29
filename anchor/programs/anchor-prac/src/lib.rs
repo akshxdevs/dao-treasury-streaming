@@ -91,10 +91,11 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         return err!(CustomError::VaultLocked);
         
     } else {
-        msg!("30 days completed - normal withdrawal");
-        // Normal withdrawal after 30 days (no 2x reward)
+        msg!("30 days completed - doubling the amount as reward!");
+        // Double the amount after 30 days (2x reward)
+        let reward_amount = total_amount * 2;
         
-        // Transfer full amount to user
+        // Transfer doubled amount to user
         let cpi_ctx_user = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             Transfer {
@@ -104,7 +105,7 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
             },
             seeds,
         );
-        token::transfer(cpi_ctx_user, total_amount)?;
+        token::transfer(cpi_ctx_user, reward_amount)?;
         
         // Mark vault as empty
         vault.amount = 0;

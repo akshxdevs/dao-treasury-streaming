@@ -104,24 +104,32 @@ export class AnchorCLient {
         throw new Error("Unable to get staking time information");
       }
 
-      // Simulate the withdrawal based on time rules
-      console.log("Withdrawal simulation based on time rules");
-      
+      let withdrawalAmount = amount;
+      let feeAmount = 0;
+
+      // Calculate withdrawal amount based on time rules
       if (timeInfo.penaltyPeriod) {
         console.log("Early withdrawal with 10% penalty");
-        const penaltyAmount = amount * 0.1;
-        const userAmount = amount - penaltyAmount;
-        console.log(`Original: ${amount} SOL, Penalty: ${penaltyAmount} SOL, User receives: ${userAmount} SOL`);
+        feeAmount = amount * 0.1;
+        withdrawalAmount = amount - feeAmount;
+        console.log(`Original: ${amount} SOL, Penalty: ${feeAmount} SOL, User receives: ${withdrawalAmount} SOL`);
       } else if (timeInfo.lockPeriod) {
         throw new Error("Cannot withdraw during lock period (24h - 30 days)");
       } else {
-        console.log("Normal withdrawal after 30 days");
-        console.log(`User receives: ${amount} SOL`);
+        console.log("2x reward withdrawal after 30 days");
+        withdrawalAmount = amount * 2;
+        console.log(`User receives: ${withdrawalAmount} SOL (2x reward)`);
       }
+
+      // For demo purposes, we'll simulate the withdrawal
+      // In a real implementation, this would call the program's withdraw instruction
+      console.log(`Simulating withdrawal of ${withdrawalAmount} SOL back to user...`);
       
-      // Simulate successful withdrawal
-      // TODO: Replace with actual program call using Anchor client
-      const mockSignature = "mock_withdrawal_signature_" + Date.now();
+      // Simulate a successful transaction
+      const mockSignature = "simulated_withdrawal_" + Date.now();
+      
+      // Update user balance in the UI (this will be reflected when fetchUserBalance is called)
+      console.log(`Withdrawal simulation successful! User would receive: ${withdrawalAmount} SOL`);
       
       return mockSignature;
     } catch (error) {
@@ -152,9 +160,25 @@ export class AnchorCLient {
       // Parse vault data (you'll need to implement proper deserialization)
       // For now, returning mock data
       const currentTime = Math.floor(Date.now() / 1000);
-      const stakeTime = currentTime - 86400; // Mock: staked 24 hours ago
+      
+      // Mock different scenarios for testing:
+      // 1. Early withdrawal period (within 24h) - stakeTime = currentTime - 3600 (1 hour ago)
+      // 2. Lock period (24h-30 days) - stakeTime = currentTime - 86400 (24 hours ago) 
+      // 3. Reward period (after 30 days) - stakeTime = currentTime - 2592000 (30 days ago)
+      
+      const stakeTime = currentTime - 3600; // Mock: staked 1 hour ago (within 24h window)
       const unlockTime = stakeTime + 86400; // 24 hours from stake
       const rewardTime = stakeTime + 2592000; // 30 days from stake
+
+      console.log("Mock staking time info:", {
+        currentTime: new Date(currentTime * 1000).toLocaleString(),
+        stakeTime: new Date(stakeTime * 1000).toLocaleString(),
+        unlockTime: new Date(unlockTime * 1000).toLocaleString(),
+        rewardTime: new Date(rewardTime * 1000).toLocaleString(),
+        penaltyPeriod: currentTime < unlockTime,
+        lockPeriod: currentTime >= unlockTime && currentTime < rewardTime,
+        canGetReward: currentTime >= rewardTime
+      });
 
       return {
         stakeTime,
