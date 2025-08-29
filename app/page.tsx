@@ -6,6 +6,7 @@ import { AnchorCLient } from "./lib/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { ArrowBigLeft, ArrowBigRight, SendToBackIcon } from "lucide-react";
 
 const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112"; // Wrapped SOL
 
@@ -70,6 +71,8 @@ export default function Home() {
     try {
       const stakedAmount = await anchorClient.getStakedBalance(MOCK_TOKEN_MINT);
       setStakedBalance(Number(stakedAmount) / LAMPORTS_PER_SOL);
+      console.log("Staked balance:", stakedAmount);
+      
     } catch (error) {
       console.error("Failed to fetch staked balance:", error);
       setStakedBalance(0);
@@ -125,13 +128,10 @@ export default function Home() {
       <AppBar />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-4">Treasury Staking</h1>
             <p className="text-gray-300 text-lg">Stake your tokens and earn rewards</p>
           </div>
-
-          {/* User Balance */}
           {connected && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-2">Your Balance</h2>
@@ -139,11 +139,8 @@ export default function Home() {
               <p className="text-3xl font-bold text-green-400">Staked: {stakedBalance} SOL</p>
             </div>
           )}
-
-          {/* Staking Form */}
           <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
             <h2 className="text-xl font-semibold text-white mb-4">Stake Tokens</h2>
-            
             {!connected ? (
               <div className="text-center py-8">
                 <p className="text-gray-300 mb-4">Please connect your wallet to start staking</p>
@@ -173,42 +170,40 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    
+
                     {!showTerms && (
-                      <button
-                        onClick={() => setShowTerms(true)}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        View Terms & Conditions
-                      </button>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="accept-terms"
+                          checked={acceptedTerms}
+                          onChange={(e) => setAcceptedTerms(e.target.checked)}
+                          className="rounded bg-gray-700 border-gray-600"
+                        />
+                        <label htmlFor="accept-terms" className="text-sm text-gray-300">
+                          I accept the <button onClick={() => setShowTerms(true)} className="text-blue-500 hover:text-blue-600">terms and conditions</button>
+                        </label>
+                      </div>
                     )}
                     
                     {showTerms && (
                       <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
-                        <h3 className="font-semibold text-white mb-2">Staking Terms & Conditions</h3>
-                        <div className="text-sm text-gray-300 space-y-2 mb-4 max-h-40 overflow-y-auto">
-                          <p>• Minimum staking period: 30 days</p>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <button onClick={() => setShowTerms(false)} className="text-blue-500 hover:text-blue-600"><ArrowBigLeft/></button>
+                          <h3 className="font-semibold text-white">Staking Terms & Conditions</h3>
+                        </div>
+                        <div className="text-sm text-gray-300 space-y-2 mb-4 max-h-62">
+                          <p>• Minimum staking period: 24 hours</p>
+                          <p>• Maximum staking period: 30 days</p>
                           <p>• Early withdrawal penalty: 5% of staked amount</p>
                           <p>• Rewards are distributed monthly</p>
                           <p>• Maximum staking amount: 1000 SOL</p>
                           <p>• Platform fee: 1% on rewards</p>
                           <p>• Your tokens are locked in a secure smart contract</p>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="accept-terms"
-                            checked={acceptedTerms}
-                            onChange={(e) => setAcceptedTerms(e.target.checked)}
-                            className="rounded bg-gray-700 border-gray-600"
-                          />
-                          <label htmlFor="accept-terms" className="text-sm text-gray-300">
-                            I accept the terms and conditions
-                          </label>
-                        </div>
+
                       </div>
                     )}
-                    
                     <div className="flex space-x-3">
                       <button
                         onClick={() => {
@@ -242,8 +237,6 @@ export default function Home() {
               </div>
             )}
           </div>
-
-          {/* Staking History */}
           {connected && userStaking.length > 0 && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-4">Your Staking History</h2>

@@ -4,7 +4,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useState, useEffect } from "react";
 import { Check, Copy } from "lucide-react";
 import toast from "react-hot-toast";
-import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import dynamic from "next/dynamic";
 
 // Dynamically import WalletMultiButton to avoid hydration issues
@@ -37,10 +36,6 @@ export default function WalletConnect({ onConnect }: WalletConnectProps) {
       toast.error("Failed to copy address!");
     }
   };
-
-  const shortAddress = (address:string) => {
-    return `${address.slice(0,4)}...${address.slice(-4)}`
-  }
 
   if (!mounted) {
     return <div className="h-10 w-32 bg-gray-700 rounded animate-pulse"></div>;

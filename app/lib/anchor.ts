@@ -160,14 +160,16 @@ export class AnchorCLient {
         PROGRAM_ID
       );
       const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
+      console.log("Vault token account:", vaultAta.toString());
       
-      // Check if vault token account exists
       const vaultTokenAccount = await this.connection.getAccountInfo(vaultAta);
       if (!vaultTokenAccount) {
-        return "0"; // No staked balance if vault doesn't exist
+        return "0";
       }
+      console.log("Vault token account:", vaultTokenAccount);
       
       const balance = await this.connection.getTokenAccountBalance(vaultAta);
+      console.log("Balance:", balance.value.amount);
       return balance.value.amount;
     } catch (error) {
       console.error("Get staked balance error:", error);
