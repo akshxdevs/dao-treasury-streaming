@@ -78,11 +78,11 @@ export default function Home() {
         const timeUntilReward = Math.max(0, stakingTimeInfo.rewardTime - currentTime);
         
         if (stakingTimeInfo.penaltyPeriod) {
-          setTimeRemaining(anchorClient?.formatTimeRemaining(timeUntilUnlock) || "");
+          setTimeRemaining(`Early withdrawal available: ${anchorClient?.formatTimeRemaining(timeUntilUnlock) || ""} left`);
         } else if (stakingTimeInfo.lockPeriod) {
-          setTimeRemaining(anchorClient?.formatTimeRemaining(timeUntilReward) || "");
+          setTimeRemaining(`Locked: ${anchorClient?.formatTimeRemaining(timeUntilReward) || ""} until normal withdrawal`);
         } else {
-          setTimeRemaining("Ready for withdrawal");
+          setTimeRemaining("Ready for normal withdrawal");
         }
       }, 1000);
 
@@ -164,40 +164,36 @@ export default function Home() {
       // Check if we can withdraw based on time
       if (stakingTimeInfo) {
         if (stakingTimeInfo.penaltyPeriod) {
-          // Before 24 hours - 10% penalty
+          // Within first 24 hours - 10% penalty, but can withdraw
           const penaltyAmount = stakingRecord.amount * 0.1;
           const userAmount = stakingRecord.amount - penaltyAmount;
           
           const confirmed = window.confirm(
-            `Early withdrawal penalty applies!\n\n` +
+            `Early withdrawal within 24 hours!\n\n` +
             `Original amount: ${stakingRecord.amount} SOL\n` +
-            `Penalty (10%): ${penaltyAmount.toFixed(4)} SOL\n` +
+            `Early withdrawal fee (10%): ${penaltyAmount.toFixed(4)} SOL\n` +
             `You will receive: ${userAmount.toFixed(4)} SOL\n\n` +
-            `Continue with withdrawal?`
+            `Continue with early withdrawal?`
           );
           
           if (!confirmed) return;
           
-          toast.success("Processing early withdrawal with 10% penalty...");
+          toast.success("Processing early withdrawal with 10% fee...");
         } else if (stakingTimeInfo.lockPeriod) {
           // Between 24 hours and 30 days - locked
-          toast.error("Cannot withdraw yet! Your tokens are locked until 30 days from staking date.");
+          toast.error("Cannot withdraw! Your tokens are locked for 30 days from staking date.");
           return;
         } else if (stakingTimeInfo.canGetReward) {
-          // After 30 days - double reward
-          const rewardAmount = stakingRecord.amount * 2;
-          
+          // After 30 days - normal withdrawal
           const confirmed = window.confirm(
-            `Congratulations! You've reached the reward period!\n\n` +
-            `Original amount: ${stakingRecord.amount} SOL\n` +
-            `Reward: ${stakingRecord.amount} SOL\n` +
-            `Total you will receive: ${rewardAmount} SOL\n\n` +
+            `30 days completed! Normal withdrawal.\n\n` +
+            `Amount to withdraw: ${stakingRecord.amount} SOL\n\n` +
             `Continue with withdrawal?`
           );
           
           if (!confirmed) return;
           
-          toast.info("Processing withdrawal with 2x reward...");
+          toast.success("Processing normal withdrawal...");
         }
       }
 
@@ -289,13 +285,14 @@ export default function Home() {
                           <h3 className="font-semibold text-white">Staking Terms & Conditions</h3>
                         </div>
                         <div className="text-sm text-gray-300 space-y-2 mb-4 max-h-62">
-                          <p>• Minimum staking period: 24 hours</p>
-                          <p>• Maximum staking period: 30 days</p>
-                          <p>• Early withdrawal penalty: 5% of staked amount</p>
-                          <p>• Rewards are distributed monthly</p>
-                          <p>• Maximum staking amount: 1000 SOL</p>
-                          <p>• Platform fee: 1% on rewards</p>
-                          <p>• Your tokens are locked in a secure smart contract</p>
+                          <p>• <strong>Early Withdrawal (within 24 hours):</strong> Available with 10% fee</p>
+                          <p>• <strong>Lock Period (24 hours - 30 days):</strong> Tokens are locked, no withdrawal allowed</p>
+                          <p>• <strong>Normal Withdrawal (after 30 days):</strong> Full amount returned</p>
+                          <p>• <strong>Minimum staking period:</strong> 24 hours</p>
+                          <p>• <strong>Maximum staking period:</strong> 30 days</p>
+                          <p>• <strong>Maximum staking amount:</strong> 1000 SOL</p>
+                          <p>• <strong>Platform fee:</strong> 1% on rewards</p>
+                          <p>• <strong>Security:</strong> Your tokens are locked in a secure smart contract</p>
                         </div>
 
                       </div>
@@ -336,6 +333,30 @@ export default function Home() {
           {connected && userStaking.length > 0 && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-4">Your Staking History</h2>
+              
+              {/* Time Status Display */}
+              {stakingTimeInfo && timeRemaining && (
+                <div className="mb-4 p-3 bg-gray-800 rounded-lg border border-gray-600">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-300">Time Status:</p>
+                      <p className="text-lg font-semibold text-white">{timeRemaining}</p>
+                    </div>
+                    <div className="text-right">
+                      {stakingTimeInfo.penaltyPeriod && (
+                        <p className="text-sm text-red-400">⚠️ Early withdrawal available (10% fee)</p>
+                      )}
+                      {stakingTimeInfo.lockPeriod && (
+                        <p className="text-sm text-yellow-400">🔒 Locked for 30 days</p>
+                      )}
+                      {stakingTimeInfo.canGetReward && (
+                        <p className="text-sm text-green-400">✅ Ready for normal withdrawal</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-3">
                 {userStaking.map((staking) => (
                   <div key={staking.id} className="border border-gray-600 rounded-lg p-4 bg-gray-800">
@@ -357,9 +378,33 @@ export default function Home() {
                         <p className="text-xs text-gray-400">
                           TX: {staking.transactionHash.slice(0, 8)}...{staking.transactionHash.slice(-8)}
                         </p>
+                        {stakingTimeInfo && (
+                          <div className="mt-2 text-xs">
+                            {stakingTimeInfo.penaltyPeriod && (
+                              <p className="text-red-400">Early withdrawal: {staking.amount * 0.9} SOL (10% fee)</p>
+                            )}
+                            {stakingTimeInfo.lockPeriod && (
+                              <p className="text-yellow-400">Locked for 30 days</p>
+                            )}
+                            {stakingTimeInfo.canGetReward && (
+                              <p className="text-green-400">Normal withdrawal: {staking.amount} SOL</p>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <button onClick={() => handleUnstaking(staking.id)} className="text-red-500 hover:text-red-600">
-                        <Trash2Icon className="w-4 h-4" />
+                      <button 
+                        onClick={() => handleUnstaking(staking)} 
+                        className={`px-3 py-1 rounded text-sm ${
+                          stakingTimeInfo?.lockPeriod 
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                            : stakingTimeInfo?.penaltyPeriod
+                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
+                        disabled={stakingTimeInfo?.lockPeriod}
+                      >
+                        {stakingTimeInfo?.lockPeriod ? 'Locked' : 
+                         stakingTimeInfo?.penaltyPeriod ? 'Early Withdraw' : 'Withdraw'}
                       </button>
                     </div>
                   </div>

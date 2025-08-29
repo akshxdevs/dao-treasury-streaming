@@ -166,10 +166,10 @@ export class AnchorCLient {
         currentTime,
         timeUntilUnlock: Math.max(0, unlockTime - currentTime),
         timeUntilReward: Math.max(0, rewardTime - currentTime),
-        canWithdraw: currentTime >= unlockTime,
+        canWithdraw: currentTime >= rewardTime, // Only after 30 days
         canGetReward: currentTime >= rewardTime,
-        penaltyPeriod: currentTime < unlockTime,
-        lockPeriod: currentTime >= unlockTime && currentTime < rewardTime
+        penaltyPeriod: currentTime < unlockTime, // Within first 24 hours
+        lockPeriod: currentTime >= unlockTime && currentTime < rewardTime // 24h to 30 days
       };
     } catch (error) {
       console.error("Get staking time info error:", error);

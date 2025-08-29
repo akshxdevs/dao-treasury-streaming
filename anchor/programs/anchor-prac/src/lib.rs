@@ -54,8 +54,8 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
          clock.unix_timestamp, vault.unlock_time, vault.reward_time);
     
     if clock.unix_timestamp < vault.unlock_time {
-        msg!("Applying penalty - withdrawing before 24 hours");
-        // 10% fee if before 24 hours
+        msg!("Early withdrawal within 24 hours - applying 10% penalty");
+        // 10% fee if within first 24 hours
         let fee_amount = total_amount / 10;
         let user_amount = total_amount - fee_amount;
 
@@ -87,15 +87,14 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         vault.amount = 0;
         
     } else if clock.unix_timestamp < vault.reward_time {
-        msg!("Locked until 30 days - cannot withdraw yet");
+        msg!("Locked period - cannot withdraw between 24 hours and 30 days");
         return err!(CustomError::VaultLocked);
         
     } else {
-        msg!("Reward time reached - doubling the amount");
-        // Double the amount after 30 days
-        let reward_amount = total_amount * 2;
+        msg!("30 days completed - normal withdrawal");
+        // Normal withdrawal after 30 days (no 2x reward)
         
-        // Transfer doubled amount to user
+        // Transfer full amount to user
         let cpi_ctx_user = CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             Transfer {
@@ -105,7 +104,7 @@ pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
             },
             seeds,
         );
-        token::transfer(cpi_ctx_user, reward_amount)?;
+        token::transfer(cpi_ctx_user, total_amount)?;
         
         // Mark vault as empty
         vault.amount = 0;
