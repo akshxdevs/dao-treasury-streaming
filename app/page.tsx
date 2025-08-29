@@ -51,27 +51,18 @@ export default function Home() {
   }, [anchorClient, publicKey]);
 
   const fetchUserBalance = async () => {
-    if (!anchorClient || !publicKey) return;
+    if (!publicKey) return;
     try {
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
       const connection = new Connection(rpcUrl, "confirmed");
       
-      // For wrapped SOL, we need to check if user has a token account
-      const userAta = await anchorClient.getUserBalance(MOCK_TOKEN_MINT);
-      setUserBalance(Number(userAta));
+      // Just check native SOL balance for now
+      const balanceInLamports = await connection.getBalance(publicKey);
+      const balance = (balanceInLamports / LAMPORTS_PER_SOL);
+      setUserBalance(balance);
     } catch (error) {
-      console.error("Failed to fetch user balance:", error);
-      // If token account doesn't exist, check native SOL balance
-      try {
-        const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
-        const connection = new Connection(rpcUrl, "confirmed");
-        const balanceInLamports = await connection.getBalance(publicKey);
-        const balance = (balanceInLamports / LAMPORTS_PER_SOL);
-        setUserBalance(balance);
-      } catch (solError) {
-        console.error("Failed to fetch SOL balance:", solError);
-        setUserBalance(0);
-      }
+      console.error("Failed to fetch SOL balance:", error);
+      setUserBalance(0);
     }
   };
 
