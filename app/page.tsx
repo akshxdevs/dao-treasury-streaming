@@ -63,9 +63,11 @@ export default function Home() {
   }, [connected, publicKey, wallet]);
 
   useEffect(() => {
-    if (anchorClient) {
+    if (anchorClient && publicKey) {
       fetchUserBalance();
       fetchStakingTimeInfo();
+    } else {
+      setStakingTimeInfo(null);
     }
   }, [anchorClient, publicKey]);
 
@@ -209,7 +211,7 @@ export default function Home() {
       await fetchUserBalance();
       await fetchStakingTimeInfo();
       
-      toast.success(`Withdrawal successful! Transaction: ${tx?.slice(0, 8)}...`);
+      toast.success(`Withdrawal simulation successful! Transaction: ${tx?.slice(0, 8)}...`);
     } catch (error: any) {
       console.error("Withdrawal error:", error);
       toast.error(error.message || "Transaction failed. Please try again.");
@@ -224,6 +226,11 @@ export default function Home() {
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-4">Treasury Staking</h1>
             <p className="text-gray-300 text-lg">Stake your tokens and earn rewards</p>
+            <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+              <p className="text-yellow-400 text-sm">
+                ⚠️ Demo Mode: Withdrawals are simulated. Connect to actual program for real transactions.
+              </p>
+            </div>
           </div>
           {connected && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
