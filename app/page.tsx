@@ -25,7 +25,6 @@ export default function Home() {
   const [anchorClient, setAnchorClient] = useState<AnchorCLient | null>(null);
   const [amount, setAmount] = useState<number>(0);
   const [userBalance, setUserBalance] = useState<number>(0);
-  const [stakedBalance, setStakedBalance] = useState<number>(0);
   const [userStaking, setUserStaking] = useState<StakingRecord[]>([]);
   const [staking, setStaking] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -48,7 +47,6 @@ export default function Home() {
   useEffect(() => {
     if (anchorClient) {
       fetchUserBalance();
-      fetchStakedBalance();
     }
   }, [anchorClient, publicKey]);
 
@@ -63,19 +61,6 @@ export default function Home() {
     } catch (error) {
       console.error("Failed to fetch SOL balance:", error);
       setUserBalance(0);
-    }
-  };
-
-  const fetchStakedBalance = async () => {
-    if (!anchorClient || !publicKey) return;
-    try {
-      const stakedAmount = await anchorClient.getStakedBalance(MOCK_TOKEN_MINT);
-      setStakedBalance(Number(stakedAmount) / LAMPORTS_PER_SOL);
-      console.log("Staked balance:", stakedAmount);
-      
-    } catch (error) {
-      console.error("Failed to fetch staked balance:", error);
-      setStakedBalance(0);
     }
   };
 
@@ -110,9 +95,7 @@ export default function Home() {
       setAmount(0);
       setAcceptedTerms(false);
       setShowfield(false);
-      
       await fetchUserBalance();
-      await fetchStakedBalance();
       
       toast.success(`Staking successful! Transaction: ${tx?.slice(0, 8)}...`);
     } catch (error: any) {
@@ -136,7 +119,6 @@ export default function Home() {
             <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-2">Your Balance</h2>
               <p className="text-3xl font-bold text-green-400">Available: {userBalance} SOL</p>
-              <p className="text-3xl font-bold text-green-400">Staked: {stakedBalance} SOL</p>
             </div>
           )}
           <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">

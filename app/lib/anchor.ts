@@ -83,7 +83,7 @@ export class AnchorCLient {
     }
   }
   
-  async withdrawal(mintAddress: string) {
+  async withdrawal(mintAddress: string, amount: number) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
       const mint = new PublicKey(mintAddress);
@@ -91,17 +91,36 @@ export class AnchorCLient {
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
         PROGRAM_ID
       );
-      const userAta = await getAssociatedTokenAddress(
-        mint,
-        this.wallet.publicKey
-      );
-      const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
-      const treasuryAta = await getAssociatedTokenAddress(
-        mint,
-        TREASURY_ADDRESS
-      );
-      console.log("Withdrawal transaction would be sent to:", vault.toString());
-      return "mock_withdrawal_transaction_signature";
+
+      const tx = new Transaction();
+      const transferInstruction = SystemProgram.transfer({
+        fromPubkey: vault,
+        toPubkey: this.wallet.publicKey,
+        lamports: amount * LAMPORTS_PER_SOL
+      });
+      tx.add(transferInstruction);
+
+      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = this.wallet.publicKey;
+      tx.lastValidBlockHeight = lastValidBlockHeight;
+
+      const signature = await this.wallet.sendTransaction(tx, this.connection, {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+        maxRetries: 3
+      });
+      
+      const confirmation = await this.connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      });
+
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${confirmation.value.err}`);
+      };
+      return signature;
     } catch (error) {
       console.error("Withdrawal error:", error);
       throw error;
