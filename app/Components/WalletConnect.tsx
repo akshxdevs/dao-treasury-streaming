@@ -29,7 +29,7 @@ export default function WalletConnect({ onConnect }: WalletConnectProps) {
   }
   if (connected && publicKey) {
     return (
-      <div className="flex items-center space-x-3 border">
+      <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-3">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse transition-transform duration-100"></div>
           <span className="font-semibold text-lg">Connected</span>
