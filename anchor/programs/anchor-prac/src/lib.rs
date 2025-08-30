@@ -13,8 +13,8 @@ pub mod anchor_prac {
         ctx.accounts.vault.amount = 0;
         ctx.accounts.vault.bump = ctx.bumps.vault;
         ctx.accounts.vault.stake_time = Clock::get()?.unix_timestamp;
-        ctx.accounts.vault.unlock_time = Clock::get()?.unix_timestamp + 86400; // 24 hours
-        ctx.accounts.vault.reward_time = Clock::get()?.unix_timestamp + 2592000; // 30 days
+        ctx.accounts.vault.unlock_time = Clock::get()?.unix_timestamp + 30; // 24 hours
+        ctx.accounts.vault.reward_time = Clock::get()?.unix_timestamp + 60; // 30 days
         Ok(())
     }
 

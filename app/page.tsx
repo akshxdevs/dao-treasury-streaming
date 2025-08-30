@@ -16,7 +16,7 @@ interface StakingRecord {
   timestamp: Date;
   status: 'active' | 'completed' | 'pending';
   transactionHash: string;
-  stakeTime?: number;
+  stakeTime: number; // Unix timestamp when staking occurred
   unlockTime?: number;
   rewardTime?: number;
 }
@@ -69,28 +69,57 @@ export default function Home() {
     } else {
       setStakingTimeInfo(null);
     }
-  }, [anchorClient, publicKey]);
+  }, [anchorClient, publicKey, userStaking]);
 
-  // Live time tracking for staking
-  useEffect(() => {
-    if (stakingTimeInfo) {
-      const interval = setInterval(() => {
-        const currentTime = Math.floor(Date.now() / 1000);
-        const timeUntilUnlock = Math.max(0, stakingTimeInfo.unlockTime - currentTime);
-        const timeUntilReward = Math.max(0, stakingTimeInfo.rewardTime - currentTime);
-        
-        if (stakingTimeInfo.penaltyPeriod) {
-          setTimeRemaining(`Early withdrawal available: ${anchorClient?.formatTimeRemaining(timeUntilUnlock) || ""} left`);
-        } else if (stakingTimeInfo.lockPeriod) {
-          setTimeRemaining(`Locked: ${anchorClient?.formatTimeRemaining(timeUntilReward) || ""} until 2x reward`);
-        } else {
-          setTimeRemaining("Ready for 2x reward withdrawal");
-        }
-      }, 1000);
+useEffect(() => {
+  if (!stakingTimeInfo) return;
 
-      return () => clearInterval(interval);
+  const updateCountdown = () => {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const timeUntilUnlock = Math.max(0, stakingTimeInfo.unlockTime - currentTime);
+    const timeUntilReward = Math.max(0, stakingTimeInfo.rewardTime - currentTime);
+
+    if (stakingTimeInfo.penaltyPeriod) {
+      setTimeRemaining(
+        `Early withdrawal available: ${
+          formatTime(timeUntilUnlock)
+        } left`
+      );
+    } else if (stakingTimeInfo.lockPeriod) {
+      setTimeRemaining(
+        `Locked: ${
+          formatTime(timeUntilReward)
+        } until 2x reward`
+      );
+    } else {
+      setTimeRemaining("Ready for 2x reward withdrawal");
     }
-  }, [stakingTimeInfo, anchorClient]);
+  };
+
+  updateCountdown(); // run once immediately
+  const interval = setInterval(updateCountdown, 1000);
+  
+  // Also refresh staking time info every 10 seconds to ensure accuracy
+  const refreshInterval = setInterval(() => {
+    if (anchorClient && publicKey) {
+      fetchStakingTimeInfo();
+    }
+  }, 10000);
+  
+  return () => {
+    clearInterval(interval);
+    clearInterval(refreshInterval);
+  };
+}, [stakingTimeInfo, anchorClient, publicKey]);
+
+// Helper function to format time properly
+const formatTime = (seconds: number) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+};
+
 
   const fetchUserBalance = async () => {
     if (!publicKey) return;
@@ -109,7 +138,11 @@ export default function Home() {
   const fetchStakingTimeInfo = async () => {
     if (!anchorClient) return;
     try {
-      const timeInfo = await anchorClient.getStakingTimeInfo();
+      // Use the stake time from the most recent active staking record
+      const activeStaking = userStaking.find(stake => stake.status === 'active');
+      const stakeTime = activeStaking ? activeStaking.stakeTime : Math.floor(Date.now() / 1000);
+      
+      const timeInfo = await anchorClient.getStakingTimeInfo(stakeTime);
       setStakingTimeInfo(timeInfo);
     } catch (error) {
       console.error("Failed to fetch staking time info:", error);
@@ -142,7 +175,8 @@ export default function Home() {
         amount: amount,
         timestamp: new Date(),
         status: 'active',
-        transactionHash: tx || 'unknown'
+        transactionHash: tx || 'unknown',
+        stakeTime: Math.floor(Date.now() / 1000) // Store actual stake time
       };
       setUserStaking(prev => [newStaking, ...prev]);
       setAmount(0);
@@ -350,6 +384,7 @@ export default function Home() {
               </div>
             )}
           </div>
+
           {connected && userStaking.length > 0 && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-4">Your Staking History</h2>

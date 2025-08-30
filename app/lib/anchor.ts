@@ -1,19 +1,31 @@
-import { getAssociatedTokenAddress, createTransferInstruction, createAssociatedTokenAccountInstruction, createSyncNativeInstruction, NATIVE_MINT } from "@solana/spl-token";
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction,
+  createSyncNativeInstruction,
+  NATIVE_MINT,
+} from "@solana/spl-token";
 import { WalletAdapter } from "@solana/wallet-adapter-base";
-import { clusterApiUrl, Connection, Keypair, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  clusterApiUrl,
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 
 const PROGRAM_ID = new PublicKey(
   "92KUjGGCrEM6kcnMd4pgze3EPnS3PwsXhpDeLB9vGpE9"
 );
 
-const TREASURY_ADDRESS = new PublicKey(
-  "11111111111111111111111111111112"
-);
+const TREASURY_ADDRESS = new PublicKey("11111111111111111111111111111112");
 
 export class AnchorCLient {
   private connection: Connection;
   private wallet: WalletAdapter;
-  
+
   constructor(wallet: WalletAdapter) {
     this.connection = new Connection(clusterApiUrl("devnet"), "confirmed");
     this.wallet = wallet;
@@ -34,46 +46,50 @@ export class AnchorCLient {
       throw error;
     }
   }
-  
+
   async deposit(amount: number) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
-      
+
       const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
         PROGRAM_ID
       );
-      
+
       const transaction = new Transaction();
       const transferSolInstruction = SystemProgram.transfer({
         fromPubkey: this.wallet.publicKey,
         toPubkey: vault,
-        lamports: amount * LAMPORTS_PER_SOL
+        lamports: amount * LAMPORTS_PER_SOL,
       });
       transaction.add(transferSolInstruction);
-      
-      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+
+      const { blockhash, lastValidBlockHeight } =
+        await this.connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = this.wallet.publicKey;
       transaction.lastValidBlockHeight = lastValidBlockHeight;
-      
-      const signature = await this.wallet.sendTransaction(transaction, this.connection, {
-        skipPreflight: false,
-        preflightCommitment: "confirmed",
-        maxRetries: 3
-      });
-      
+
+      const signature = await this.wallet.sendTransaction(
+        transaction,
+        this.connection,
+        {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+          maxRetries: 3,
+        }
+      );
+
       const confirmation = await this.connection.confirmTransaction({
         signature,
         blockhash,
-        lastValidBlockHeight
+        lastValidBlockHeight,
       });
-      
+
       if (confirmation.value.err) {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
       return signature;
-      
     } catch (error) {
       console.error("Staking error:", error);
       if (error instanceof Error) {
@@ -82,7 +98,7 @@ export class AnchorCLient {
       throw new Error("Transaction failed with unknown error");
     }
   }
-  
+
   async withdrawal(mintAddress: string, amount: number) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
@@ -112,7 +128,9 @@ export class AnchorCLient {
         console.log("Early withdrawal with 10% penalty");
         feeAmount = amount * 0.1;
         withdrawalAmount = amount - feeAmount;
-        console.log(`Original: ${amount} SOL, Penalty: ${feeAmount} SOL, User receives: ${withdrawalAmount} SOL`);
+        console.log(
+          `Original: ${amount} SOL, Penalty: ${feeAmount} SOL, User receives: ${withdrawalAmount} SOL`
+        );
       } else if (timeInfo.lockPeriod) {
         throw new Error("Cannot withdraw during lock period (24h - 30 days)");
       } else {
@@ -124,36 +142,41 @@ export class AnchorCLient {
       // Create a real transaction to demonstrate the withdrawal
       // This will show up in your wallet activity as a real transaction
       const tx = new Transaction();
-      
+
       // Create a demo address to simulate the vault
-      const demoVaultAddress = new PublicKey("11111111111111111111111111111112"); // System Program ID as demo
-      
+      const demoVaultAddress = new PublicKey(
+        "11111111111111111111111111111112"
+      ); // System Program ID as demo
+
       // Send a small amount to simulate the withdrawal (this will show in wallet activity)
       const demoInstruction = SystemProgram.transfer({
         fromPubkey: this.wallet.publicKey,
         toPubkey: demoVaultAddress,
-        lamports: 1000 // Small amount to show transaction
+        lamports: 1000, // Small amount to show transaction
       });
-      
+
       tx.add(demoInstruction);
 
-      const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+      const { blockhash, lastValidBlockHeight } =
+        await this.connection.getLatestBlockhash();
       tx.recentBlockhash = blockhash;
       tx.feePayer = this.wallet.publicKey;
       tx.lastValidBlockHeight = lastValidBlockHeight;
 
-      console.log(`Processing withdrawal simulation - you will see a transaction in your wallet...`);
-      
+      console.log(
+        `Processing withdrawal simulation - you will see a transaction in your wallet...`
+      );
+
       const signature = await this.wallet.sendTransaction(tx, this.connection, {
         skipPreflight: false,
         preflightCommitment: "confirmed",
-        maxRetries: 3
+        maxRetries: 3,
       });
-      
+
       const confirmation = await this.connection.confirmTransaction({
         signature,
         blockhash,
-        lastValidBlockHeight
+        lastValidBlockHeight,
       });
 
       if (confirmation.value.err) {
@@ -161,8 +184,10 @@ export class AnchorCLient {
       }
 
       console.log(`Withdrawal simulation successful! Signature: ${signature}`);
-      console.log(`In real implementation, you would receive: ${withdrawalAmount} SOL`);
-      
+      console.log(
+        `In real implementation, you would receive: ${withdrawalAmount} SOL`
+      );
+
       return signature;
     } catch (error) {
       console.error("Withdrawal error:", error);
@@ -171,13 +196,15 @@ export class AnchorCLient {
   }
 
   // New function to get staking time information
-  async getStakingTimeInfo() {
+  async getStakingTimeInfo(stakeTime?: number) {
     try {
       if (!this.wallet.publicKey) {
-        console.log("Wallet not connected, returning null for staking time info");
+        console.log(
+          "Wallet not connected, returning null for staking time info"
+        );
         return null;
       }
-      
+
       const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
         PROGRAM_ID
@@ -189,69 +216,54 @@ export class AnchorCLient {
         return null;
       }
 
-      // Parse vault data (you'll need to implement proper deserialization)
-      // For now, returning mock data
       const currentTime = Math.floor(Date.now() / 1000);
-      
-      // Mock different scenarios for testing:
-      // 1. Early withdrawal period (within 24h) - stakeTime = currentTime - 3600 (1 hour ago)
-      // 2. Lock period (24h-30 days) - stakeTime = currentTime - 86400 (24 hours ago) 
-      // 3. Reward period (after 30 days) - stakeTime = currentTime - 2592000 (30 days ago)
-      
-      const stakeTime = currentTime - 3600; // Mock: staked 1 hour ago (within 24h window)
-      const unlockTime = stakeTime + 86400; // 24 hours from stake
-      const rewardTime = stakeTime + 2592000; // 30 days from stake
+      const actualStakeTime = stakeTime || currentTime;
+      const unlockTime = actualStakeTime + 30; // 30 seconds for early withdrawal
+      const rewardTime = actualStakeTime + 60; // 60 seconds for 2x reward
 
       console.log("Mock staking time info:", {
         currentTime: new Date(currentTime * 1000).toLocaleString(),
-        stakeTime: new Date(stakeTime * 1000).toLocaleString(),
+        stakeTime: new Date(actualStakeTime * 1000).toLocaleString(),
         unlockTime: new Date(unlockTime * 1000).toLocaleString(),
         rewardTime: new Date(rewardTime * 1000).toLocaleString(),
         penaltyPeriod: currentTime < unlockTime,
         lockPeriod: currentTime >= unlockTime && currentTime < rewardTime,
-        canGetReward: currentTime >= rewardTime
+        canGetReward: currentTime >= rewardTime,
       });
 
       return {
-        stakeTime,
+        stakeTime: actualStakeTime,
         unlockTime,
         rewardTime,
         currentTime,
         timeUntilUnlock: Math.max(0, unlockTime - currentTime),
         timeUntilReward: Math.max(0, rewardTime - currentTime),
-        canWithdraw: currentTime >= rewardTime, // Only after 30 days
+        canWithdraw: currentTime >= rewardTime,
         canGetReward: currentTime >= rewardTime,
-        penaltyPeriod: currentTime < unlockTime, // Within first 24 hours
-        lockPeriod: currentTime >= unlockTime && currentTime < rewardTime // 24h to 30 days
+        penaltyPeriod: currentTime < unlockTime,
+        lockPeriod: currentTime >= unlockTime && currentTime < rewardTime,
       };
     } catch (error) {
       console.error("Get staking time info error:", error);
-      return null; // Return null instead of throwing error
+      return null;
     }
   }
 
-  // Function to format time remaining
-  formatTimeRemaining(seconds: number): string {
-    if (seconds <= 0) return "Ready";
-    
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (days > 0) {
-      return `${days}d ${hours}h ${minutes}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else {
-      return `${minutes}m`;
-    }
+  formatFallback(seconds: number) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
   }
-  
+
   async getUserBalance(mintAddress: string) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
       const mint = new PublicKey(mintAddress);
-      const userAta = await getAssociatedTokenAddress(mint, this.wallet.publicKey);
+      const userAta = await getAssociatedTokenAddress(
+        mint,
+        this.wallet.publicKey
+      );
       const balance = await this.connection.getTokenAccountBalance(userAta);
       return balance.value.amount;
     } catch (error) {
@@ -259,7 +271,7 @@ export class AnchorCLient {
       throw error;
     }
   }
-  
+
   async getVaultBalance(mintAddress: string) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
@@ -276,11 +288,14 @@ export class AnchorCLient {
       throw error;
     }
   }
-  
+
   async getTreasuryBalance(mintAddress: string) {
     try {
       const mint = new PublicKey(mintAddress);
-      const treasuryAta = await getAssociatedTokenAddress(mint, TREASURY_ADDRESS);
+      const treasuryAta = await getAssociatedTokenAddress(
+        mint,
+        TREASURY_ADDRESS
+      );
       const balance = await this.connection.getTokenAccountBalance(treasuryAta);
       return balance.value.amount;
     } catch (error) {
@@ -292,7 +307,7 @@ export class AnchorCLient {
   async getStakedBalance(mintAddress: string) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
-      
+
       const mint = new PublicKey(mintAddress);
       const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
@@ -300,13 +315,13 @@ export class AnchorCLient {
       );
       const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
       console.log("Vault token account:", vaultAta.toString());
-      
+
       const vaultTokenAccount = await this.connection.getAccountInfo(vaultAta);
       if (!vaultTokenAccount) {
         return "0";
       }
       console.log("Vault token account:", vaultTokenAccount);
-      
+
       const balance = await this.connection.getTokenAccountBalance(vaultAta);
       console.log("Balance:", balance.value.amount);
       return balance.value.amount;
