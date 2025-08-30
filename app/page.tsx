@@ -37,13 +37,20 @@ export default function Home() {
   const [userStaking, setUserStaking] = useState<StakingRecord[]>([]);
   const [staking, setStaking] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [rewardBalance, setRewardBalance] = useState<number>(0); // Track rewards separately
 
   useEffect(() => {
     if (connected && publicKey && wallet?.adapter) {
       const client = new AnchorCLient(wallet.adapter);
       setAnchorClient(client);
+      
+      // Clear stakes from other users when connecting with a new wallet
+      setUserStaking(prev => prev.filter(stake => stake.userPublicKey === publicKey.toString()));
     } else {
       setAnchorClient(null);
+      // Clear all stakes when disconnecting
+      setUserStaking([]);
+      setRewardBalance(0); // Clear reward balance when disconnecting
     }
   }, [connected, publicKey, wallet]);
 
@@ -151,6 +158,10 @@ export default function Home() {
       setAmount(0);
       setAcceptedTerms(false);
       setShowfield(false);
+      
+      // Deduct staked amount from wallet balance
+      setUserBalance(prev => prev - amount);
+      
       await fetchUserBalance();
       
       toast.success(`Staking successful!`);
@@ -214,13 +225,37 @@ export default function Home() {
           : stake
       ));
       
-      console.log(`Balance before: ${userBalance}, Adding: ${receivedAmount}, New balance: ${userBalance + receivedAmount}`);
-      setUserBalance(prev => prev + receivedAmount);
+      // Update reward balance instead of wallet balance for 2x rewards
+      if (currentTime >= stakingRecord.rewardTime) {
+        // 2x reward case - add to reward balance
+        setRewardBalance(prev => prev + receivedAmount);
+        console.log(`2x Reward added: ${receivedAmount} SOL to reward balance`);
+      } else if (currentTime < stakingRecord.unlockTime) {
+        // Early withdrawal case - add back to wallet balance (minus fee)
+        setUserBalance(prev => prev + receivedAmount);
+        console.log(`Early withdrawal: ${receivedAmount} SOL added back to wallet`);
+      }
       
       setStaking(false);
       toast.success(`Withdrawal successful! You received ${receivedAmount.toFixed(4)} SOL`);
     } catch (error: any) {
       toast.error(error.message || "Transaction failed");
+    }
+  };
+
+  const claimRewards = async () => {
+    if (rewardBalance <= 0) {
+      toast.error("No rewards to claim");
+      return;
+    }
+    
+    try {
+      // Simulate claiming rewards to wallet
+      setUserBalance(prev => prev + rewardBalance);
+      setRewardBalance(0);
+      toast.success(`Claimed ${rewardBalance.toFixed(4)} SOL rewards to wallet!`);
+    } catch (error) {
+      toast.error("Failed to claim rewards");
     }
   };
 
@@ -242,7 +277,19 @@ export default function Home() {
           {connected && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-2">Your Balance</h2>
-              <p className="text-3xl font-bold text-green-400">Available: {userBalance} SOL</p>
+              <p className="text-3xl font-bold text-green-400">Wallet: {userBalance} SOL</p>
+              {rewardBalance > 0 && (
+                <div className="mt-2">
+                  <p className="text-lg font-semibold text-yellow-400">Rewards: +{rewardBalance.toFixed(4)} SOL</p>
+                  <button
+                    onClick={claimRewards}
+                    className="mt-2 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                  >
+                    Claim Rewards to Wallet
+                  </button>
+                </div>
+              )}
+              <p className="text-2xl font-bold text-blue-400">Total: {(userBalance + rewardBalance).toFixed(4)} SOL</p>
             </div>
           )}
           <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
@@ -343,6 +390,9 @@ export default function Home() {
           {connected && userStaking.length > 0 && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-4">Your Staking History</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Wallet: {publicKey?.toString().slice(0, 8)}...{publicKey?.toString().slice(-8)}
+              </p>
               
               {userStaking
                 .filter(staking => staking.userPublicKey === publicKey?.toString())
@@ -398,7 +448,7 @@ export default function Home() {
                         disabled={staking.lockPeriod}
                       >
                         {staking.lockPeriod ? 'Locked' : 
-                         staking.penaltyPeriod ? 'Early Withdraw' : 'Withdraw'}
+                         staking.penaltyPeriod ? 'Early unstake' : 'unstake'}
                       </button>
                     )}
                   </div>
