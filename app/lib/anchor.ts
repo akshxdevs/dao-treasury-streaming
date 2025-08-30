@@ -132,9 +132,9 @@ export class AnchorCLient {
           `Original: ${amount} SOL, Penalty: ${feeAmount} SOL, User receives: ${withdrawalAmount} SOL`
         );
       } else if (timeInfo.lockPeriod) {
-        throw new Error("Cannot withdraw during lock period (24h - 30 days)");
+        throw new Error("Cannot withdraw during lock period (30s - 60s)");
       } else {
-        console.log("2x reward withdrawal after 30 days");
+        console.log("2x reward withdrawal after 60 seconds");
         withdrawalAmount = amount * 2;
         console.log(`User receives: ${withdrawalAmount} SOL (2x reward)`);
       }
@@ -143,12 +143,14 @@ export class AnchorCLient {
       // This will show up in your wallet activity as a real transaction
       const tx = new Transaction();
 
-      // Create a demo address to simulate the vault
+      // For demo purposes, we'll simulate the vault having enough funds
+      // In a real implementation, the vault would need to have the withdrawal amount
       const demoVaultAddress = new PublicKey(
         "11111111111111111111111111111112"
       ); // System Program ID as demo
 
       // Send a small amount to simulate the withdrawal (this will show in wallet activity)
+      // In real implementation, this would be the actual withdrawal amount from vault
       const demoInstruction = SystemProgram.transfer({
         fromPubkey: this.wallet.publicKey,
         toPubkey: demoVaultAddress,
@@ -166,6 +168,7 @@ export class AnchorCLient {
       console.log(
         `Processing withdrawal simulation - you will see a transaction in your wallet...`
       );
+      console.log(`In real implementation, you would receive: ${withdrawalAmount} SOL from vault`);
 
       const signature = await this.wallet.sendTransaction(tx, this.connection, {
         skipPreflight: false,
