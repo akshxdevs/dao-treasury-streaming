@@ -39,10 +39,8 @@ export class AnchorCLient {
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
         PROGRAM_ID
       );
-      console.log("Initialize transaction:", vault.toString());
       return "mock_transaction_signature";
     } catch (error) {
-      console.error("Initialize error:", error);
       throw error;
     }
   }
@@ -91,7 +89,6 @@ export class AnchorCLient {
       }
       return signature;
     } catch (error) {
-      console.error("Staking error:", error);
       if (error instanceof Error) {
         throw new Error(`Transaction failed: ${error.message}`);
       }
@@ -108,13 +105,11 @@ export class AnchorCLient {
         PROGRAM_ID
       );
 
-      // Get vault account info to check timing
       const vaultAccount = await this.connection.getAccountInfo(vault);
       if (!vaultAccount) {
         throw new Error("Vault not found");
       }
 
-      // Get staking time info to determine withdrawal type
       const timeInfo = await this.getStakingTimeInfo();
       if (!timeInfo) {
         throw new Error("Unable to get staking time information");
@@ -123,38 +118,24 @@ export class AnchorCLient {
       let withdrawalAmount = amount;
       let feeAmount = 0;
 
-      // Calculate withdrawal amount based on time rules
       if (timeInfo.penaltyPeriod) {
-        console.log("Early withdrawal with 10% penalty");
         feeAmount = amount * 0.1;
         withdrawalAmount = amount - feeAmount;
-        console.log(
-          `Original: ${amount} SOL, Penalty: ${feeAmount} SOL, User receives: ${withdrawalAmount} SOL`
-        );
       } else if (timeInfo.lockPeriod) {
         throw new Error("Cannot withdraw during lock period (30s - 60s)");
       } else {
-        console.log("2x reward withdrawal after 60 seconds");
         withdrawalAmount = amount * 2;
-        console.log(`User receives: ${withdrawalAmount} SOL (2x reward)`);
       }
 
-      // Create a real transaction to demonstrate the withdrawal
-      // This will show up in your wallet activity as a real transaction
       const tx = new Transaction();
-
-      // For demo purposes, we'll simulate the vault having enough funds
-      // In a real implementation, the vault would need to have the withdrawal amount
       const demoVaultAddress = new PublicKey(
         "11111111111111111111111111111112"
-      ); // System Program ID as demo
+      );
 
-      // Send a small amount to simulate the withdrawal (this will show in wallet activity)
-      // In real implementation, this would be the actual withdrawal amount from vault
       const demoInstruction = SystemProgram.transfer({
         fromPubkey: this.wallet.publicKey,
         toPubkey: demoVaultAddress,
-        lamports: 1000, // Small amount to show transaction
+        lamports: 1000,
       });
 
       tx.add(demoInstruction);
@@ -164,11 +145,6 @@ export class AnchorCLient {
       tx.recentBlockhash = blockhash;
       tx.feePayer = this.wallet.publicKey;
       tx.lastValidBlockHeight = lastValidBlockHeight;
-
-      console.log(
-        `Processing withdrawal simulation - you will see a transaction in your wallet...`
-      );
-      console.log(`In real implementation, you would receive: ${withdrawalAmount} SOL from vault`);
 
       const signature = await this.wallet.sendTransaction(tx, this.connection, {
         skipPreflight: false,
@@ -186,25 +162,15 @@ export class AnchorCLient {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
 
-      console.log(`Withdrawal simulation successful! Signature: ${signature}`);
-      console.log(
-        `In real implementation, you would receive: ${withdrawalAmount} SOL`
-      );
-
       return signature;
     } catch (error) {
-      console.error("Withdrawal error:", error);
       throw error;
     }
   }
 
-  // New function to get staking time information
   async getStakingTimeInfo(stakeTime?: number) {
     try {
       if (!this.wallet.publicKey) {
-        console.log(
-          "Wallet not connected, returning null for staking time info"
-        );
         return null;
       }
 
@@ -215,24 +181,13 @@ export class AnchorCLient {
 
       const vaultAccount = await this.connection.getAccountInfo(vault);
       if (!vaultAccount) {
-        console.log("Vault not found, returning null for staking time info");
         return null;
       }
 
       const currentTime = Math.floor(Date.now() / 1000);
       const actualStakeTime = stakeTime || currentTime;
-      const unlockTime = actualStakeTime + 30; // 30 seconds for early withdrawal
-      const rewardTime = actualStakeTime + 60; // 60 seconds for 2x reward
-
-      console.log("Mock staking time info:", {
-        currentTime: new Date(currentTime * 1000).toLocaleString(),
-        stakeTime: new Date(actualStakeTime * 1000).toLocaleString(),
-        unlockTime: new Date(unlockTime * 1000).toLocaleString(),
-        rewardTime: new Date(rewardTime * 1000).toLocaleString(),
-        penaltyPeriod: currentTime < unlockTime,
-        lockPeriod: currentTime >= unlockTime && currentTime < rewardTime,
-        canGetReward: currentTime >= rewardTime,
-      });
+      const unlockTime = actualStakeTime + 30;
+      const rewardTime = actualStakeTime + 60;
 
       return {
         stakeTime: actualStakeTime,
@@ -247,7 +202,6 @@ export class AnchorCLient {
         lockPeriod: currentTime >= unlockTime && currentTime < rewardTime,
       };
     } catch (error) {
-      console.error("Get staking time info error:", error);
       return null;
     }
   }
@@ -270,7 +224,6 @@ export class AnchorCLient {
       const balance = await this.connection.getTokenAccountBalance(userAta);
       return balance.value.amount;
     } catch (error) {
-      console.error("Get user balance error:", error);
       throw error;
     }
   }
@@ -287,7 +240,6 @@ export class AnchorCLient {
       const balance = await this.connection.getTokenAccountBalance(vaultAta);
       return balance.value.amount;
     } catch (error) {
-      console.error("Get vault balance error:", error);
       throw error;
     }
   }
@@ -302,7 +254,6 @@ export class AnchorCLient {
       const balance = await this.connection.getTokenAccountBalance(treasuryAta);
       return balance.value.amount;
     } catch (error) {
-      console.error("Get treasury balance error:", error);
       throw error;
     }
   }
@@ -317,19 +268,15 @@ export class AnchorCLient {
         PROGRAM_ID
       );
       const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
-      console.log("Vault token account:", vaultAta.toString());
 
       const vaultTokenAccount = await this.connection.getAccountInfo(vaultAta);
       if (!vaultTokenAccount) {
         return "0";
       }
-      console.log("Vault token account:", vaultTokenAccount);
 
       const balance = await this.connection.getTokenAccountBalance(vaultAta);
-      console.log("Balance:", balance.value.amount);
       return balance.value.amount;
     } catch (error) {
-      console.error("Get staked balance error:", error);
       return "0";
     }
   }

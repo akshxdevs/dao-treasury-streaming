@@ -6,37 +6,25 @@ import { AnchorCLient } from "./lib/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { ArrowBigLeft, ArrowBigRight, SendToBackIcon, Trash2Icon } from "lucide-react";
+import { ArrowBigLeft } from "lucide-react";
 
-const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112"; // Wrapped SOL
+const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112";
 
 interface StakingRecord {
   id: string;
   amount: number;
   timestamp: Date;
-  status: 'active' | 'completed' | 'pending';
+  status: 'active' | 'completed';
   transactionHash: string;
-  stakeTime: number; // Unix timestamp when staking occurred
-  unlockTime: number; // Calculated unlock time
-  rewardTime: number; // Calculated reward time
-  timeRemaining?: string; // Current time remaining display
+  stakeTime: number;
+  unlockTime: number;
+  rewardTime: number;
+  timeRemaining?: string;
   canWithdraw?: boolean;
   canGetReward?: boolean;
   penaltyPeriod?: boolean;
   lockPeriod?: boolean;
-}
-
-interface StakingTimeInfo {
-  stakeTime: number;
-  unlockTime: number;
-  rewardTime: number;
-  currentTime: number;
-  timeUntilUnlock: number;
-  timeUntilReward: number;
-  canWithdraw: boolean;
-  canGetReward: boolean;
-  penaltyPeriod: boolean;
-  lockPeriod: boolean;
+  userPublicKey: string;
 }
 
 export default function Home() {
@@ -52,14 +40,8 @@ export default function Home() {
 
   useEffect(() => {
     if (connected && publicKey && wallet?.adapter) {
-      try {
-        const client = new AnchorCLient(wallet.adapter);
-        setAnchorClient(client);
-        console.log("Anchor client initialized");
-      } catch (error) {
-        console.error("Failed to initialize anchor client:", error);
-        toast.error("Failed to initialize wallet connection");
-      }
+      const client = new AnchorCLient(wallet.adapter);
+      setAnchorClient(client);
     } else {
       setAnchorClient(null);
     }
@@ -71,7 +53,6 @@ export default function Home() {
     }
   }, [anchorClient, publicKey]);
 
-  // Update individual stake timing every second
   useEffect(() => {
     if (userStaking.length === 0) return;
 
@@ -79,7 +60,8 @@ export default function Home() {
       const currentTime = Math.floor(Date.now() / 1000);
       
       setUserStaking(prev => prev.map(stake => {
-        if (stake.status === 'completed') return stake; // Don't update completed stakes
+        if (stake.status === 'completed') return stake;
+        if (stake.userPublicKey !== publicKey?.toString()) return stake;
         
         const timeUntilUnlock = Math.max(0, stake.unlockTime - currentTime);
         const timeUntilReward = Math.max(0, stake.rewardTime - currentTime);
@@ -91,7 +73,7 @@ export default function Home() {
         
         let timeRemaining = "";
         if (penaltyPeriod) {
-          timeRemaining = `Early withdrawal available: ${formatTime(timeUntilUnlock)} left`;
+          timeRemaining = `Early withdrawal: ${formatTime(timeUntilUnlock)} left`;
         } else if (lockPeriod) {
           timeRemaining = `Locked: ${formatTime(timeUntilReward)} until 2x reward`;
         } else {
@@ -109,20 +91,17 @@ export default function Home() {
       }));
     };
 
-    updateStakeTiming(); // Run immediately
+    updateStakeTiming();
     const interval = setInterval(updateStakeTiming, 1000);
-    
     return () => clearInterval(interval);
-  }, [userStaking.length]); // Only depend on length, not the array itself
+  }, [userStaking.length, publicKey]);
 
-// Helper function to format time properly
-const formatTime = (seconds: number) => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
-};
-
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+  };
 
   const fetchUserBalance = async () => {
     if (!publicKey) return;
@@ -133,7 +112,6 @@ const formatTime = (seconds: number) => {
       const balance = (balanceInLamports / LAMPORTS_PER_SOL);
       setUserBalance(balance);
     } catch (error) {
-      console.error("Failed to fetch SOL balance:", error);
       setUserBalance(0);
     }
   };
@@ -164,9 +142,10 @@ const formatTime = (seconds: number) => {
         timestamp: new Date(),
         status: 'active',
         transactionHash: tx || 'unknown',
-        stakeTime: Math.floor(Date.now() / 1000), // Store actual stake time
-        unlockTime: Math.floor(Date.now() / 1000) + 30, // 30 seconds for early withdrawal
-        rewardTime: Math.floor(Date.now() / 1000) + 60 // 60 seconds for 2x reward
+        stakeTime: Math.floor(Date.now() / 1000),
+        unlockTime: Math.floor(Date.now() / 1000) + 30,
+        rewardTime: Math.floor(Date.now() / 1000) + 60,
+        userPublicKey: publicKey?.toString() || "unknown"
       };
       setUserStaking(prev => [newStaking, ...prev]);
       setAmount(0);
@@ -174,10 +153,9 @@ const formatTime = (seconds: number) => {
       setShowfield(false);
       await fetchUserBalance();
       
-      toast.success(`Staking successful! Transaction: ${tx?.slice(0, 8)}...`);
+      toast.success(`Staking successful!`);
     } catch (error: any) {
-      console.error("Staking error:", error);
-      toast.error(error.message || "Transaction failed. Please try again.");
+      toast.error(error.message || "Transaction failed");
     } finally {
       setStaking(false);
     }
@@ -186,79 +164,63 @@ const formatTime = (seconds: number) => {
   const handleUnstaking = async (stakingRecord: StakingRecord) => {
     if (!publicKey || !anchorClient) return;
     
+    // Ensure only the stake owner can withdraw
+    if (stakingRecord.userPublicKey !== publicKey.toString()) {
+      toast.error("You can only withdraw your own stakes");
+      return;
+    }
+    
     try {
-      // Check if we can withdraw based on time
+      const currentTime = Math.floor(Date.now() / 1000);
+      let receivedAmount = stakingRecord.amount;
+      
       if (stakingRecord.status === 'active') {
-        const currentTime = Math.floor(Date.now() / 1000);
-        
         if (currentTime < stakingRecord.unlockTime) {
-          // Still in penalty period - can withdraw with 10% fee
+          receivedAmount = stakingRecord.amount * 0.9;
           const penaltyAmount = stakingRecord.amount * 0.1;
-          const userAmount = stakingRecord.amount - penaltyAmount;
           
           const confirmed = window.confirm(
             `Early withdrawal within 30 seconds!\n\n` +
             `Original amount: ${stakingRecord.amount} SOL\n` +
             `Early withdrawal fee (10%): ${penaltyAmount.toFixed(4)} SOL\n` +
-            `You will receive: ${userAmount.toFixed(4)} SOL\n\n` +
+            `You will receive: ${receivedAmount.toFixed(4)} SOL\n\n` +
             `Continue with early withdrawal?`
           );
           
           if (!confirmed) return;
-          
-          toast.success("Processing early withdrawal with 10% fee...");
         } else if (currentTime >= stakingRecord.unlockTime && currentTime < stakingRecord.rewardTime) {
-          // In lock period - cannot withdraw
           toast.error("Cannot withdraw! Your tokens are locked for 60 seconds from staking date.");
           return;
         } else if (currentTime >= stakingRecord.rewardTime) {
-          // After reward period - 2x reward
-          const rewardAmount = stakingRecord.amount * 2;
+          receivedAmount = stakingRecord.amount * 2;
           
           const confirmed = window.confirm(
             `Congratulations! 60 seconds completed!\n\n` +
             `Original amount: ${stakingRecord.amount} SOL\n` +
             `Reward: ${stakingRecord.amount} SOL\n` +
-            `Total you will receive: ${rewardAmount} SOL (2x)\n\n` +
+            `Total you will receive: ${receivedAmount} SOL (2x)\n\n` +
             `Continue with withdrawal?`
           );
           
           if (!confirmed) return;
-          
-          toast.success("Processing withdrawal with 2x reward...");
         }
       }
 
       const tx = await anchorClient.withdrawal(MOCK_TOKEN_MINT, stakingRecord.amount);
       
-      // Calculate what the user would receive
-      let receivedAmount = stakingRecord.amount;
-      const currentTime = Math.floor(Date.now() / 1000);
-      
-      if (currentTime < stakingRecord.unlockTime) {
-        receivedAmount = stakingRecord.amount * 0.9; // 10% fee
-      } else if (currentTime >= stakingRecord.rewardTime) {
-        receivedAmount = stakingRecord.amount * 2; // 2x reward
-      }
-      
-      // Update staking record status
       setUserStaking(prev => prev.map(stake => 
         stake.id === stakingRecord.id 
           ? { ...stake, status: 'completed' as const }
           : stake
       ));
       
-      // Update user balance with the received amount
-      // Note: In real implementation, this would come from the vault
-      // For demo purposes, we're simulating the balance increase
+      console.log(`Balance before: ${userBalance}, Adding: ${receivedAmount}, New balance: ${userBalance + receivedAmount}`);
       setUserBalance(prev => prev + receivedAmount);
       
       setStaking(false);
-      await fetchUserBalance(); // Refresh real balance
-      toast.success(`Withdrawal successful! You received ${receivedAmount.toFixed(4)} SOL. Check your wallet for the transaction!`);
+      toast.success(`Withdrawal successful! You received ${receivedAmount.toFixed(4)} SOL`);
     } catch (error: any) {
-      console.error("Withdrawal error:", error);
-      toast.error(error.message || "Transaction failed. Please try again.");
+      toast.error(error.message || "Transaction failed");
     }
   };
 
@@ -334,19 +296,14 @@ const formatTime = (seconds: number) => {
                       <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
                         <div className="flex items-center space-x-2 mb-2">
                           <button onClick={() => setShowTerms(false)} className="text-blue-500 hover:text-blue-600"><ArrowBigLeft/></button>
-                          <h3 className="font-semibold text-white">Staking Terms & Conditions</h3>
+                          <h3 className="font-semibold text-white">Staking Terms</h3>
                         </div>
-                        <div className="text-sm text-gray-300 space-y-2 mb-4 max-h-62">
-                          <p>• <strong>Early Withdrawal (within 24 hours):</strong> Available with 10% fee</p>
-                          <p>• <strong>Lock Period (24 hours - 30 days):</strong> Tokens are locked, no withdrawal allowed</p>
-                          <p>• <strong>Reward Period (after 30 days):</strong> Receive 2x your staked amount</p>
-                          <p>• <strong>Minimum staking period:</strong> 24 hours</p>
-                          <p>• <strong>Maximum staking period:</strong> 30 days</p>
-                          <p>• <strong>Maximum staking amount:</strong> 1000 SOL</p>
-                          <p>• <strong>Platform fee:</strong> 1% on rewards</p>
-                          <p>• <strong>Security:</strong> Your tokens are locked in a secure smart contract</p>
+                        <div className="text-sm text-gray-300 space-y-2 mb-4">
+                          <p>• <strong>Early Withdrawal (0-30s):</strong> 10% fee</p>
+                          <p>• <strong>Lock Period (30-60s):</strong> No withdrawal</p>
+                          <p>• <strong>Reward Period (60s+):</strong> 2x reward</p>
+                          <p>• <strong>Max amount:</strong> 1000 SOL</p>
                         </div>
-
                       </div>
                     )}
                     <div className="flex space-x-3">
@@ -387,8 +344,9 @@ const formatTime = (seconds: number) => {
             <div className="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-white mb-4">Your Staking History</h2>
               
-              {/* Time Status Display */}
-              {userStaking.map((staking) => (
+              {userStaking
+                .filter(staking => staking.userPublicKey === publicKey?.toString())
+                .map((staking) => (
                 <div key={staking.id} className="border border-gray-600 rounded-lg p-4 bg-gray-800 mb-2">
                   <div className="flex justify-between items-center">
                     <div>
@@ -396,8 +354,7 @@ const formatTime = (seconds: number) => {
                         <p className="font-semibold text-white">{staking.amount} SOL</p>
                         <p className={`text-sm px-2 py-1 rounded-full ${
                           staking.status === 'active' ? 'bg-green-900 text-green-300' :
-                          staking.status === 'completed' ? 'bg-blue-900 text-blue-300' :
-                          'bg-yellow-900 text-yellow-300'
+                          'bg-blue-900 text-blue-300'
                         }`}>
                           {staking.status}
                         </p>
@@ -410,13 +367,12 @@ const formatTime = (seconds: number) => {
                       </p>
                       {staking.timeRemaining && staking.status === 'active' && (
                         <div className="mt-2 text-xs">
-                          <p className="text-gray-300">Time Status:</p>
                           <p className="text-sm font-semibold text-white">{staking.timeRemaining}</p>
                           {staking.penaltyPeriod && (
                             <p className="text-red-400">Early withdrawal: {(staking.amount * 0.9).toFixed(4)} SOL (10% fee)</p>
                           )}
                           {staking.lockPeriod && (
-                            <p className="text-yellow-400">Locked for 60 seconds</p>
+                            <p className="text-yellow-400">Locked for another 30 seconds totally 60 seconds</p>
                           )}
                           {staking.canGetReward && (
                             <p className="text-green-400">2x Reward: {(staking.amount * 2).toFixed(4)} SOL</p>
