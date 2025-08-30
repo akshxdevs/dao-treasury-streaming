@@ -249,6 +249,8 @@ const formatTime = (seconds: number) => {
       ));
       
       // Update user balance with the received amount
+      // Note: In real implementation, this would come from the vault
+      // For demo purposes, we're simulating the balance increase
       setUserBalance(prev => prev + receivedAmount);
       
       setStaking(false);
