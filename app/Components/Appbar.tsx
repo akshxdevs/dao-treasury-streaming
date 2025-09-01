@@ -8,7 +8,7 @@ export const AppBar = () => {
   const { theme, toggleTheme } = useTheme();
   return (
     <div className="border-b border-zinc-800/70 bg-black/50 backdrop-blur supports-[backdrop-filter]:bg-black/30">
-      <div className="max-w-7xl mx-auto px-10 py-6">
+      <div className="max-w-7xl mx-auto px-10 py-4">
         <div className="flex justify-between items-center">
           <motion.div
             initial={{opacity:0,x:-20}}

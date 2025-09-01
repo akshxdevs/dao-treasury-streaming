@@ -246,7 +246,7 @@ export default function Home() {
 
       // Update reward balance instead of wallet balance for 2x rewards
       if (currentTime >= stakingRecord.rewardTime) {
-        // 2x reward case - add to reward balance
+        // 2x reward case - add the full doubled amount to reward balance
         setRewardBalance((prev) => prev + receivedAmount);
         console.log(`2x Reward added: ${receivedAmount} SOL to reward balance`);
       } else if (currentTime < stakingRecord.unlockTime) {
@@ -273,7 +273,7 @@ export default function Home() {
     }
 
     try {
-      // Simulate claiming rewards to wallet
+      // Add the full reward balance (containing doubled amounts) to wallet
       setUserBalance((prev) => prev + rewardBalance);
       setRewardBalance(0);
       toast.success(
@@ -287,7 +287,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black">
       <AppBar />
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto p-4">
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-1" style={{fontFamily:"var(--font-display)"}}>
