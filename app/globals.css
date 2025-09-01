@@ -1,8 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #e5fbe6;
+  --muted: #0f1115;
+  --card: #0b0f14;
+  --border: #1f2a2e;
+  --accent: #22c55e;
+  --accent-600: #16a34a;
+  --accent-700: #15803d;
+  --accent-900: #052e16;
+  --accent-soft: rgba(34, 197, 94, 0.15);
+  --ring: rgba(34, 197, 94, 0.4);
+}
+
+html[data-theme="light"] {
+  --background: #f8fff9;
+  --foreground: #111827;
+  --muted: #eef8f0;
+  --card: #ffffff;
+  --border: #d1fae5;
+  --accent: #16a34a;
+  --accent-600: #16a34a;
+  --accent-700: #15803d;
+  --accent-900: #064e3b;
+  --accent-soft: rgba(16, 185, 129, 0.15);
+  --ring: rgba(16, 185, 129, 0.35);
+}
+
+html[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #e5fbe6;
+  --muted: #0f1115;
+  --card: #0b0f14;
+  --border: #1f2a2e;
+  --accent: #22c55e;
+  --accent-600: #16a34a;
+  --accent-700: #15803d;
+  --accent-900: #052e16;
+  --accent-soft: rgba(34, 197, 94, 0.15);
+  --ring: rgba(34, 197, 94, 0.4);
 }
 
 @theme inline {
@@ -10,17 +47,100 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-display);
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(1000px 800px at 10% -10%, rgba(34, 197, 94, 0.08), transparent 60%),
+    radial-gradient(800px 600px at 90% 10%, rgba(16, 185, 129, 0.06), transparent 60%),
+    var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, Segoe UI, Roboto,
+    Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji",
+    "Segoe UI Emoji";
+}
+
+/* Accent utilities */
+.bg-card {
+  background-color: var(--card);
+}
+.border-base {
+  border-color: var(--border);
+}
+.text-accent {
+  color: var(--accent);
+}
+.bg-accent {
+  background-color: var(--accent);
+}
+.ring-accent {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Glow styles */
+.glow-shadow {
+  box-shadow: 0 10px 40px rgba(34, 197, 94, 0.15), inset 0 0 0 1px var(--border);
+}
+.glow-soft {
+  box-shadow: 0 0 0 1px var(--border), 0 8px 40px rgba(34, 197, 94, 0.12);
+}
+
+/* Animated gradient border */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 0.75rem;
+  background: conic-gradient(from 180deg at 50% 50%,
+      rgba(34, 197, 94, 0.6), rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.6));
+  filter: blur(12px);
+  opacity: 0.6;
+  z-index: -1;
+  animation: spin-slow 6s linear infinite;
+}
+
+/* Keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/***** Utility animation classes *****/
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(180deg, var(--accent), var(--accent-600));
+  color: white;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  will-change: transform, filter;
+}
+.btn-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.25);
+}
+.btn-secondary {
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
 }

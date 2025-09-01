@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import WalletProviderWrapper from "./Components/WalletProvider";
 import { Toaster } from "react-hot-toast"
+import { ThemeProvider } from "./Components/ThemeProvider";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -10,6 +12,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const displayFont = Space_Grotesk({
+  variable: "--font-display",
   subsets: ["latin"],
 });
 
@@ -26,21 +33,23 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} antialiased`}
       >
-        <WalletProviderWrapper>
-        {children}
-        <Toaster 
-          position="top-right"
-          toastOptions ={{
-            duration:4000,
-            style:{
-              background:'#1e293b',
-              color:"#fff"
-            }
-          }}
-        />
-        </WalletProviderWrapper>
+        <ThemeProvider>
+          <WalletProviderWrapper>
+          {children}
+          <Toaster 
+            position="top-right"
+            toastOptions ={{
+              duration:4000,
+              style:{
+                background:'#1e293b',
+                color:"#fff"
+              }
+            }}
+          />
+          </WalletProviderWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );
