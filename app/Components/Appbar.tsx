@@ -7,8 +7,8 @@ import { useTheme } from "./ThemeProvider";
 export const AppBar = () => {
   const { theme, toggleTheme } = useTheme();
   return (
-    <div className="border-b border-zinc-800/70 bg-black/50 backdrop-blur supports-[backdrop-filter]:bg-black/30">
-      <div className="max-w-7xl mx-auto px-10 py-4">
+    <div className={`border-b border-zinc-800/70 ${theme == "dark" ? "bg-black/50 backdrop-blur supports-[backdrop-filter]:bg-black/30" : "bg-white backdrop-blur supports-[backdrop-filter]:bg-whiite/50"}`}>
+    <div className="max-w-7xl mx-auto px-10 py-4">
         <div className="flex justify-between items-center">
           <motion.div
             initial={{opacity:0,x:-20}}
@@ -18,7 +18,7 @@ export const AppBar = () => {
             <div className="p-2 rounded-lg bg-accent/10 glow-soft animate-float">
               <VaultIcon className="w-8 h-8 text-accent"/>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight" style={{fontFamily:"var(--font-display)"}}>DAO Treasury</h1>
+            <h1 className={`text-2xl font-bold ${theme == "dark" ? "text-white" : "text-black"} tracking-tight`} style={{fontFamily:"var(--font-display)"}}>DAO Treasury</h1>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 20 }}

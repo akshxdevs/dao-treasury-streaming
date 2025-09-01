@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { ArrowBigLeft, Wallet } from "lucide-react";
 import { Typewriter } from "./Components/Typewriter";
+import { useTheme } from "./Components/ThemeProvider";
 
 const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112";
 
@@ -39,7 +40,7 @@ export default function Home() {
   const [staking, setStaking] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [rewardBalance, setRewardBalance] = useState<number>(0);
-
+  const { theme } = useTheme();
   useEffect(() => {
     if (connected && publicKey && wallet?.adapter) {
       const client = new AnchorCLient(wallet.adapter);
@@ -305,7 +306,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className={`min-h-screen ${theme == "dark" ? "bg-black text-white" : "bg-white text-black"}`}>
       <AppBar />
       <div className="container mx-auto p-4">
         <div className="max-w-xl mx-auto">
@@ -318,7 +319,7 @@ export default function Home() {
             </p>
             <div className="mt-4 p-2 bg-accent/10 border border-base rounded-lg gradient-border">
               <p className="text-accent text-sm">
-                ⚠️ Demo Mode: Withdrawals show real transactions in your wallet
+                Demo Mode: Withdrawals show real transactions in your wallet
                 for demonstration. Connect to actual program for real SOL
                 transfers from vault.
               </p>
