@@ -289,14 +289,14 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-1">
+            <h1 className="text-4xl font-bold text-white mb-1" style={{fontFamily:"var(--font-display)"}}>
               Treasury Staking
             </h1>
             <p className="text-gray-300 text-lg">
               Stake your tokens and earn rewards
             </p>
-            <div className="mt-4 p-2 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
-              <p className="text-yellow-400 text-sm">
+            <div className="mt-4 p-2 bg-accent/10 border border-base rounded-lg gradient-border">
+              <p className="text-accent text-sm">
                 ⚠️ Demo Mode: Withdrawals show real transactions in your wallet
                 for demonstration. Connect to actual program for real SOL
                 transfers from vault.
@@ -304,32 +304,32 @@ export default function Home() {
             </div>
           </div>
           {connected && (
-            <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-4 border border-gray-700">
+            <div className="card rounded-lg shadow-md p-6 mb-4 border border-base glow-shadow">
               <h2 className="text-xl font-semibold text-white mb-2">
                 Your Balance
               </h2>
-              <p className="text-3xl font-bold text-green-400">
+              <p className="text-3xl font-bold text-accent">
                 Wallet: {userBalance} SOL
               </p>
               {rewardBalance > 0 && (
                 <div className="mt-2">
-                  <p className="text-lg font-semibold text-yellow-700">
+                  <p className="text-lg font-semibold text-accent">
                     Rewards: +{rewardBalance.toFixed(4)} SOL
                   </p>
                   <button
                     onClick={claimRewards}
-                    className="flex items-center gap-2 my-2 bg-green-800 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex items-center gap-2 my-2 btn-primary px-6 py-2 rounded-lg"
                   >
                     Add to <Wallet/>
                   </button>
                 </div>
               )}
-              <p className="text-2xl font-bold text-blue-400">
+              <p className="text-2xl font-bold text-green-300">
                 Total: {(userBalance + rewardBalance).toFixed(4)} SOL
               </p>
             </div>
           )}
-          <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
+          <div className="card rounded-lg shadow-md p-6 mb-6 border border-base glow-soft">
             <h2 className="text-xl font-semibold text-white mb-4">
               Stake Tokens
             </h2>
@@ -350,7 +350,7 @@ export default function Home() {
                       <input
                         type="number"
                         placeholder="Enter amount.."
-                        className="w-full border border-gray-600 bg-gray-800 text-white p-3 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full border border-base bg-card text-white p-3 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                         onChange={(e) => {
                           const val = e.target.value;
                           setAmount(val === "" ? null : Number(val));
@@ -367,7 +367,7 @@ export default function Home() {
                                 Estimated fees: ~0.005 SOL (first time: ~0.007
                                 SOL)
                               </p>
-                              <p className="text-yellow-400">
+                              <p className="text-accent">
                                 Total required: ~{(amount + 0.005).toFixed(2)}{" "}
                                 SOL
                               </p>
@@ -382,7 +382,7 @@ export default function Home() {
                           id="accept-terms"
                           checked={acceptedTerms}
                           onChange={(e) => setAcceptedTerms(e.target.checked)}
-                          className="rounded bg-gray-700 border-gray-600"
+                          className="rounded bg-card border-base"
                         />
                         <label
                           htmlFor="accept-terms"
@@ -391,7 +391,7 @@ export default function Home() {
                           I accept the{" "}
                           <button
                             onClick={() => setShowTerms(true)}
-                            className="text-blue-500 hover:text-blue-600"
+                            className="text-accent hover:underline"
                           >
                             terms and conditions
                           </button>
@@ -400,11 +400,11 @@ export default function Home() {
                     )}
 
                     {showTerms && (
-                      <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                      <div className="bg-card p-4 rounded-lg border border-base">
                         <div className="flex items-center space-x-2 mb-2">
                           <button
                             onClick={() => setShowTerms(false)}
-                            className="text-blue-500 hover:text-blue-600"
+                            className="text-accent hover:underline"
                           >
                             <ArrowBigLeft />
                           </button>
@@ -437,7 +437,7 @@ export default function Home() {
                           setAcceptedTerms(false);
                           setAmount(0);
                         }}
-                        className="flex-1 bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                        className="flex-1 btn-secondary py-3 rounded-lg hover:bg-accent/10 transition-colors"
                         disabled={staking}
                       >
                         Cancel
@@ -446,7 +446,7 @@ export default function Home() {
                         onClick={() => {
                           if (amount !== null) handleStaking(amount);
                         }}
-                        className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                        className="flex-1 btn-primary py-3 rounded-lg disabled:opacity-50"
                         disabled={
                           staking ||
                           !acceptedTerms ||
@@ -461,7 +461,7 @@ export default function Home() {
                 ) : (
                   <button
                     onClick={() => setShowfield(true)}
-                    className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors"
+                    className="w-full btn-primary py-3 rounded-lg"
                   >
                     Start Staking
                   </button>
@@ -471,7 +471,7 @@ export default function Home() {
           </div>
 
           {connected && userStaking.length > 0 && (
-            <div className="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
+            <div className="card rounded-lg shadow-md p-6 border border-base">
               <h2 className="text-xl font-semibold text-white mb-4">
                 Your Staking History
               </h2>
@@ -487,7 +487,7 @@ export default function Home() {
                 .map((staking) => (
                   <div
                     key={staking.id}
-                    className="border border-gray-600 rounded-lg p-4 bg-gray-800 mb-2"
+                    className="border border-base rounded-lg p-4 bg-card mb-2 hover:bg-accent/5 transition-colors"
                   >
                     <div className="flex justify-between items-center">
                       <div>
@@ -498,8 +498,8 @@ export default function Home() {
                           <p
                             className={`text-sm px-2 py-1 rounded-full ${
                               staking.status === "active"
-                                ? "bg-green-900 text-green-300"
-                                : "bg-blue-900 text-blue-300"
+                                ? "bg-accent/10 text-accent"
+                                : "bg-blue-900/40 text-blue-300"
                             }`}
                           >
                             {staking.status}
@@ -521,7 +521,7 @@ export default function Home() {
                               </p>
                               {staking.penaltyPeriod && (
                                 <p className="text-red-400">
-                                  Early withdrawal:{" "}
+                                  Early withdrawal: {" "}
                                   {(staking.amount * 0.9).toFixed(4)} SOL (10%
                                   fee)
                                 </p>
@@ -556,7 +556,7 @@ export default function Home() {
                               ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                               : staking.penaltyPeriod
                               ? "bg-orange-600 text-white hover:bg-orange-700"
-                              : "bg-green-600 text-white hover:bg-green-700"
+                              : "btn-primary"
                           }`}
                           disabled={staking.lockPeriod}
                         >
