@@ -6,7 +6,7 @@ import { AnchorCLient } from "./lib/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { ArrowBigLeft } from "lucide-react";
+import { ArrowBigLeft, Wallet } from "lucide-react";
 
 const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112";
 
@@ -14,7 +14,7 @@ interface StakingRecord {
   id: string;
   amount: number;
   timestamp: Date;
-  status: 'active' | 'completed';
+  status: "active" | "completed";
   transactionHash: string;
   stakeTime: number;
   unlockTime: number;
@@ -32,25 +32,25 @@ export default function Home() {
   const [showfield, setShowfield] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [anchorClient, setAnchorClient] = useState<AnchorCLient | null>(null);
-  const [amount, setAmount] = useState<number>(0);
+  const [amount, setAmount] = useState<number | null>(null);
   const [userBalance, setUserBalance] = useState<number>(0);
   const [userStaking, setUserStaking] = useState<StakingRecord[]>([]);
   const [staking, setStaking] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [rewardBalance, setRewardBalance] = useState<number>(0); // Track rewards separately
+  const [rewardBalance, setRewardBalance] = useState<number>(0);
 
   useEffect(() => {
     if (connected && publicKey && wallet?.adapter) {
       const client = new AnchorCLient(wallet.adapter);
       setAnchorClient(client);
-      
-      // Clear stakes from other users when connecting with a new wallet
-      setUserStaking(prev => prev.filter(stake => stake.userPublicKey === publicKey.toString()));
+
+      setUserStaking((prev) =>
+        prev.filter((stake) => stake.userPublicKey === publicKey.toString())
+      );
     } else {
       setAnchorClient(null);
-      // Clear all stakes when disconnecting
       setUserStaking([]);
-      setRewardBalance(0); // Clear reward balance when disconnecting
+      setRewardBalance(0);
     }
   }, [connected, publicKey, wallet]);
 
@@ -65,37 +65,44 @@ export default function Home() {
 
     const updateStakeTiming = () => {
       const currentTime = Math.floor(Date.now() / 1000);
-      
-      setUserStaking(prev => prev.map(stake => {
-        if (stake.status === 'completed') return stake;
-        if (stake.userPublicKey !== publicKey?.toString()) return stake;
-        
-        const timeUntilUnlock = Math.max(0, stake.unlockTime - currentTime);
-        const timeUntilReward = Math.max(0, stake.rewardTime - currentTime);
-        
-        const penaltyPeriod = currentTime < stake.unlockTime;
-        const lockPeriod = currentTime >= stake.unlockTime && currentTime < stake.rewardTime;
-        const canGetReward = currentTime >= stake.rewardTime;
-        const canWithdraw = canGetReward || penaltyPeriod;
-        
-        let timeRemaining = "";
-        if (penaltyPeriod) {
-          timeRemaining = `Early withdrawal: ${formatTime(timeUntilUnlock)} left`;
-        } else if (lockPeriod) {
-          timeRemaining = `Locked: ${formatTime(timeUntilReward)} until 2x reward`;
-        } else {
-          timeRemaining = "Ready for 2x reward withdrawal";
-        }
-        
-        return {
-          ...stake,
-          timeRemaining,
-          canWithdraw,
-          canGetReward,
-          penaltyPeriod,
-          lockPeriod
-        };
-      }));
+
+      setUserStaking((prev) =>
+        prev.map((stake) => {
+          if (stake.status === "completed") return stake;
+          if (stake.userPublicKey !== publicKey?.toString()) return stake;
+
+          const timeUntilUnlock = Math.max(0, stake.unlockTime - currentTime);
+          const timeUntilReward = Math.max(0, stake.rewardTime - currentTime);
+
+          const penaltyPeriod = currentTime < stake.unlockTime;
+          const lockPeriod =
+            currentTime >= stake.unlockTime && currentTime < stake.rewardTime;
+          const canGetReward = currentTime >= stake.rewardTime;
+          const canWithdraw = canGetReward || penaltyPeriod;
+
+          let timeRemaining = "";
+          if (penaltyPeriod) {
+            timeRemaining = `Early withdrawal: ${formatTime(
+              timeUntilUnlock
+            )} left`;
+          } else if (lockPeriod) {
+            timeRemaining = `Locked: ${formatTime(
+              timeUntilReward
+            )} until 2x reward`;
+          } else {
+            timeRemaining = "Ready for 2x reward withdrawal";
+          }
+
+          return {
+            ...stake,
+            timeRemaining,
+            canWithdraw,
+            canGetReward,
+            penaltyPeriod,
+            lockPeriod,
+          };
+        })
+      );
     };
 
     updateStakeTiming();
@@ -113,10 +120,11 @@ export default function Home() {
   const fetchUserBalance = async () => {
     if (!publicKey) return;
     try {
-      const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
+      const rpcUrl =
+        process.env.NEXT_PUBLIC_RPC_URL || "https://api.devnet.solana.com";
       const connection = new Connection(rpcUrl, "confirmed");
       const balanceInLamports = await connection.getBalance(publicKey);
-      const balance = (balanceInLamports / LAMPORTS_PER_SOL);
+      const balance = balanceInLamports / LAMPORTS_PER_SOL;
       setUserBalance(balance);
     } catch (error) {
       setUserBalance(0);
@@ -128,7 +136,7 @@ export default function Home() {
       toast.error("Please accept the terms and conditions first");
       return;
     }
-    
+
     if (amount <= 0) {
       toast.error("Please enter a valid amount");
       return;
@@ -142,28 +150,28 @@ export default function Home() {
     try {
       setStaking(true);
       const tx = await anchorClient?.deposit(amount);
-      
+
       const newStaking: StakingRecord = {
         id: Date.now().toString(),
         amount: amount,
         timestamp: new Date(),
-        status: 'active',
-        transactionHash: tx || 'unknown',
+        status: "active",
+        transactionHash: tx || "unknown",
         stakeTime: Math.floor(Date.now() / 1000),
         unlockTime: Math.floor(Date.now() / 1000) + 30,
         rewardTime: Math.floor(Date.now() / 1000) + 60,
-        userPublicKey: publicKey?.toString() || "unknown"
+        userPublicKey: publicKey?.toString() || "unknown",
       };
-      setUserStaking(prev => [newStaking, ...prev]);
+      setUserStaking((prev) => [newStaking, ...prev]);
       setAmount(0);
       setAcceptedTerms(false);
       setShowfield(false);
-      
+
       // Deduct staked amount from wallet balance
-      setUserBalance(prev => prev - amount);
-      
+      setUserBalance((prev) => prev - amount);
+
       await fetchUserBalance();
-      
+
       toast.success(`Staking successful!`);
     } catch (error: any) {
       toast.error(error.message || "Transaction failed");
@@ -174,70 +182,84 @@ export default function Home() {
 
   const handleUnstaking = async (stakingRecord: StakingRecord) => {
     if (!publicKey || !anchorClient) return;
-    
+
     // Ensure only the stake owner can withdraw
     if (stakingRecord.userPublicKey !== publicKey.toString()) {
       toast.error("You can only withdraw your own stakes");
       return;
     }
-    
+
     try {
       const currentTime = Math.floor(Date.now() / 1000);
       let receivedAmount = stakingRecord.amount;
-      
-      if (stakingRecord.status === 'active') {
+
+      if (stakingRecord.status === "active") {
         if (currentTime < stakingRecord.unlockTime) {
           receivedAmount = stakingRecord.amount * 0.9;
           const penaltyAmount = stakingRecord.amount * 0.1;
-          
+
           const confirmed = window.confirm(
             `Early withdrawal within 30 seconds!\n\n` +
-            `Original amount: ${stakingRecord.amount} SOL\n` +
-            `Early withdrawal fee (10%): ${penaltyAmount.toFixed(4)} SOL\n` +
-            `You will receive: ${receivedAmount.toFixed(4)} SOL\n\n` +
-            `Continue with early withdrawal?`
+              `Original amount: ${stakingRecord.amount} SOL\n` +
+              `Early withdrawal fee (10%): ${penaltyAmount.toFixed(4)} SOL\n` +
+              `You will receive: ${receivedAmount.toFixed(4)} SOL\n\n` +
+              `Continue with early withdrawal?`
           );
-          
+
           if (!confirmed) return;
-        } else if (currentTime >= stakingRecord.unlockTime && currentTime < stakingRecord.rewardTime) {
-          toast.error("Cannot withdraw! Your tokens are locked for 60 seconds from staking date.");
+        } else if (
+          currentTime >= stakingRecord.unlockTime &&
+          currentTime < stakingRecord.rewardTime
+        ) {
+          toast.error(
+            "Cannot withdraw! Your tokens are locked for 60 seconds from staking date."
+          );
           return;
         } else if (currentTime >= stakingRecord.rewardTime) {
           receivedAmount = stakingRecord.amount * 2;
-          
+
           const confirmed = window.confirm(
             `Congratulations! 60 seconds completed!\n\n` +
-            `Original amount: ${stakingRecord.amount} SOL\n` +
-            `Reward: ${stakingRecord.amount} SOL\n` +
-            `Total you will receive: ${receivedAmount} SOL (2x)\n\n` +
-            `Continue with withdrawal?`
+              `Original amount: ${stakingRecord.amount} SOL\n` +
+              `Reward: ${stakingRecord.amount} SOL\n` +
+              `Total you will receive: ${receivedAmount} SOL (2x)\n\n` +
+              `Continue with withdrawal?`
           );
-          
+
           if (!confirmed) return;
         }
       }
 
-      const tx = await anchorClient.withdrawal(MOCK_TOKEN_MINT, stakingRecord.amount);
-      
-      setUserStaking(prev => prev.map(stake => 
-        stake.id === stakingRecord.id 
-          ? { ...stake, status: 'completed' as const }
-          : stake
-      ));
-      
+      const tx = await anchorClient.withdrawal(
+        MOCK_TOKEN_MINT,
+        stakingRecord.amount
+      );
+
+      setUserStaking((prev) =>
+        prev.map((stake) =>
+          stake.id === stakingRecord.id
+            ? { ...stake, status: "completed" as const }
+            : stake
+        )
+      );
+
       // Update reward balance instead of wallet balance for 2x rewards
       if (currentTime >= stakingRecord.rewardTime) {
         // 2x reward case - add to reward balance
-        setRewardBalance(prev => prev + receivedAmount);
+        setRewardBalance((prev) => prev + receivedAmount);
         console.log(`2x Reward added: ${receivedAmount} SOL to reward balance`);
       } else if (currentTime < stakingRecord.unlockTime) {
         // Early withdrawal case - add back to wallet balance (minus fee)
-        setUserBalance(prev => prev + receivedAmount);
-        console.log(`Early withdrawal: ${receivedAmount} SOL added back to wallet`);
+        setUserBalance((prev) => prev + receivedAmount);
+        console.log(
+          `Early withdrawal: ${receivedAmount} SOL added back to wallet`
+        );
       }
-      
+
       setStaking(false);
-      toast.success(`Withdrawal successful! You received ${receivedAmount.toFixed(4)} SOL`);
+      toast.success(
+        `Withdrawal successful! You received ${receivedAmount.toFixed(4)} SOL`
+      );
     } catch (error: any) {
       toast.error(error.message || "Transaction failed");
     }
@@ -248,12 +270,14 @@ export default function Home() {
       toast.error("No rewards to claim");
       return;
     }
-    
+
     try {
       // Simulate claiming rewards to wallet
-      setUserBalance(prev => prev + rewardBalance);
+      setUserBalance((prev) => prev + rewardBalance);
       setRewardBalance(0);
-      toast.success(`Claimed ${rewardBalance.toFixed(4)} SOL rewards to wallet!`);
+      toast.success(
+        `Claimed ${rewardBalance.toFixed(4)} SOL rewards to wallet!`
+      );
     } catch (error) {
       toast.error("Failed to claim rewards");
     }
@@ -263,40 +287,57 @@ export default function Home() {
     <div className="min-h-screen bg-black">
       <AppBar />
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-4">Treasury Staking</h1>
-            <p className="text-gray-300 text-lg">Stake your tokens and earn rewards</p>
-            <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+            <h1 className="text-4xl font-bold text-white mb-1">
+              Treasury Staking
+            </h1>
+            <p className="text-gray-300 text-lg">
+              Stake your tokens and earn rewards
+            </p>
+            <div className="mt-4 p-2 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
               <p className="text-yellow-400 text-sm">
-                ⚠️ Demo Mode: Withdrawals show real transactions in your wallet for demonstration. 
-                Connect to actual program for real SOL transfers from vault.
+                ⚠️ Demo Mode: Withdrawals show real transactions in your wallet
+                for demonstration. Connect to actual program for real SOL
+                transfers from vault.
               </p>
             </div>
           </div>
           {connected && (
-            <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
-              <h2 className="text-xl font-semibold text-white mb-2">Your Balance</h2>
-              <p className="text-3xl font-bold text-green-400">Wallet: {userBalance} SOL</p>
+            <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-4 border border-gray-700">
+              <h2 className="text-xl font-semibold text-white mb-2">
+                Your Balance
+              </h2>
+              <p className="text-3xl font-bold text-green-400">
+                Wallet: {userBalance} SOL
+              </p>
               {rewardBalance > 0 && (
                 <div className="mt-2">
-                  <p className="text-lg font-semibold text-yellow-400">Rewards: +{rewardBalance.toFixed(4)} SOL</p>
+                  <p className="text-lg font-semibold text-yellow-700">
+                    Rewards: +{rewardBalance.toFixed(4)} SOL
+                  </p>
                   <button
                     onClick={claimRewards}
-                    className="mt-2 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                    className="flex items-center gap-2 my-2 bg-green-800 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    Claim Rewards to Wallet
+                    Add to <Wallet/>
                   </button>
                 </div>
               )}
-              <p className="text-2xl font-bold text-blue-400">Total: {(userBalance + rewardBalance).toFixed(4)} SOL</p>
+              <p className="text-2xl font-bold text-blue-400">
+                Total: {(userBalance + rewardBalance).toFixed(4)} SOL
+              </p>
             </div>
           )}
           <div className="bg-gray-900 rounded-lg shadow-md p-6 mb-6 border border-gray-700">
-            <h2 className="text-xl font-semibold text-white mb-4">Stake Tokens</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">
+              Stake Tokens
+            </h2>
             {!connected ? (
               <div className="text-center py-8">
-                <p className="text-gray-300 mb-4">Please connect your wallet to start staking</p>
+                <p className="text-gray-300 mb-4">
+                  Please connect your wallet to start staking
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -308,20 +349,30 @@ export default function Home() {
                       </label>
                       <input
                         type="number"
-                        placeholder="Enter amount"
+                        placeholder="Enter amount.."
                         className="w-full border border-gray-600 bg-gray-800 text-white p-3 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        onChange={(e) => setAmount(Number(e.target.value))}
-                        value={amount || ''}
-                        min="0"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setAmount(val === "" ? null : Number(val));
+                        }}
+                        value={amount == null ? "" : amount}
                         step="0.0001"
                       />
-                      {amount > 0 && (
-                        <div className="mt-2 text-sm text-gray-400">
-                          <p>Staking amount: {amount} SOL</p>
-                          <p>Estimated fees: ~0.005 SOL (first time: ~0.007 SOL)</p>
-                          <p className="text-yellow-400">Total required: ~{(amount + 0.005).toFixed(3)} SOL</p>
-                        </div>
-                      )}
+                      {amount == null
+                        ? ""
+                        : amount >= 0 && (
+                            <div className="mt-2 text-sm text-gray-400">
+                              <p>Staking amount: {amount} SOL</p>
+                              <p>
+                                Estimated fees: ~0.005 SOL (first time: ~0.007
+                                SOL)
+                              </p>
+                              <p className="text-yellow-400">
+                                Total required: ~{(amount + 0.005).toFixed(2)}{" "}
+                                SOL
+                              </p>
+                            </div>
+                          )}
                     </div>
 
                     {!showTerms && (
@@ -333,23 +384,48 @@ export default function Home() {
                           onChange={(e) => setAcceptedTerms(e.target.checked)}
                           className="rounded bg-gray-700 border-gray-600"
                         />
-                        <label htmlFor="accept-terms" className="text-sm text-gray-300">
-                          I accept the <button onClick={() => setShowTerms(true)} className="text-blue-500 hover:text-blue-600">terms and conditions</button>
+                        <label
+                          htmlFor="accept-terms"
+                          className="text-sm text-gray-300"
+                        >
+                          I accept the{" "}
+                          <button
+                            onClick={() => setShowTerms(true)}
+                            className="text-blue-500 hover:text-blue-600"
+                          >
+                            terms and conditions
+                          </button>
                         </label>
                       </div>
                     )}
-                    
+
                     {showTerms && (
                       <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
                         <div className="flex items-center space-x-2 mb-2">
-                          <button onClick={() => setShowTerms(false)} className="text-blue-500 hover:text-blue-600"><ArrowBigLeft/></button>
-                          <h3 className="font-semibold text-white">Staking Terms</h3>
+                          <button
+                            onClick={() => setShowTerms(false)}
+                            className="text-blue-500 hover:text-blue-600"
+                          >
+                            <ArrowBigLeft />
+                          </button>
+                          <h3 className="font-semibold text-white">
+                            Staking Terms
+                          </h3>
                         </div>
                         <div className="text-sm text-gray-300 space-y-2 mb-4">
-                          <p>• <strong>Early Withdrawal (0-30s):</strong> 10% fee</p>
-                          <p>• <strong>Lock Period (30-60s):</strong> No withdrawal</p>
-                          <p>• <strong>Reward Period (60s+):</strong> 2x reward</p>
-                          <p>• <strong>Max amount:</strong> 1000 SOL</p>
+                          <p>
+                            • <strong>Early Withdrawal (0-30s):</strong> 10% fee
+                          </p>
+                          <p>
+                            • <strong>Lock Period (30-60s):</strong> No
+                            withdrawal
+                          </p>
+                          <p>
+                            • <strong>Reward Period (60s+):</strong> 2x reward
+                          </p>
+                          <p>
+                            • <strong>Max amount:</strong> 1000 SOL
+                          </p>
                         </div>
                       </div>
                     )}
@@ -367,11 +443,18 @@ export default function Home() {
                         Cancel
                       </button>
                       <button
-                        onClick={() => handleStaking(amount)}
+                        onClick={() => {
+                          if (amount !== null) handleStaking(amount);
+                        }}
                         className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                        disabled={staking || !acceptedTerms || amount <= 0}
+                        disabled={
+                          staking ||
+                          !acceptedTerms ||
+                          amount === null ||
+                          amount <= 0
+                        }
                       >
-                        {staking ? 'Processing...' : 'Stake Now'}
+                        {staking ? "Processing..." : "Stake Now"}
                       </button>
                     </div>
                   </div>
@@ -389,71 +472,104 @@ export default function Home() {
 
           {connected && userStaking.length > 0 && (
             <div className="bg-gray-900 rounded-lg shadow-md p-6 border border-gray-700">
-              <h2 className="text-xl font-semibold text-white mb-4">Your Staking History</h2>
+              <h2 className="text-xl font-semibold text-white mb-4">
+                Your Staking History
+              </h2>
               <p className="text-sm text-gray-400 mb-4">
-                Wallet: {publicKey?.toString().slice(0, 8)}...{publicKey?.toString().slice(-8)}
+                Wallet: {publicKey?.toString().slice(0, 8)}...
+                {publicKey?.toString().slice(-8)}
               </p>
-              
+
               {userStaking
-                .filter(staking => staking.userPublicKey === publicKey?.toString())
+                .filter(
+                  (staking) => staking.userPublicKey === publicKey?.toString()
+                )
                 .map((staking) => (
-                <div key={staking.id} className="border border-gray-600 rounded-lg p-4 bg-gray-800 mb-2">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-white">{staking.amount} SOL</p>
-                        <p className={`text-sm px-2 py-1 rounded-full ${
-                          staking.status === 'active' ? 'bg-green-900 text-green-300' :
-                          'bg-blue-900 text-blue-300'
-                        }`}>
-                          {staking.status}
+                  <div
+                    key={staking.id}
+                    className="border border-gray-600 rounded-lg p-4 bg-gray-800 mb-2"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <p className="font-semibold text-white">
+                            {staking.amount} SOL
+                          </p>
+                          <p
+                            className={`text-sm px-2 py-1 rounded-full ${
+                              staking.status === "active"
+                                ? "bg-green-900 text-green-300"
+                                : "bg-blue-900 text-blue-300"
+                            }`}
+                          >
+                            {staking.status}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-300">
+                          {staking.timestamp.toLocaleDateString()} at{" "}
+                          {staking.timestamp.toLocaleTimeString()}
                         </p>
+                        <p className="text-xs text-gray-400">
+                          TX: {staking.transactionHash.slice(0, 8)}...
+                          {staking.transactionHash.slice(-8)}
+                        </p>
+                        {staking.timeRemaining &&
+                          staking.status === "active" && (
+                            <div className="mt-2 text-xs">
+                              <p className="text-sm font-semibold text-white">
+                                {staking.timeRemaining}
+                              </p>
+                              {staking.penaltyPeriod && (
+                                <p className="text-red-400">
+                                  Early withdrawal:{" "}
+                                  {(staking.amount * 0.9).toFixed(4)} SOL (10%
+                                  fee)
+                                </p>
+                              )}
+                              {staking.lockPeriod && (
+                                <p className="text-yellow-400">
+                                  Locked for another 30 seconds totally 60
+                                  seconds
+                                </p>
+                              )}
+                              {staking.canGetReward && (
+                                <p className="text-green-400">
+                                  2x Reward: {(staking.amount * 2).toFixed(4)}{" "}
+                                  SOL
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        {staking.status === "completed" && (
+                          <div className="mt-2 text-xs">
+                            <p className="text-green-400">
+                              ✅ Withdrawal completed
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-300">
-                        {staking.timestamp.toLocaleDateString()} at {staking.timestamp.toLocaleTimeString()}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        TX: {staking.transactionHash.slice(0, 8)}...{staking.transactionHash.slice(-8)}
-                      </p>
-                      {staking.timeRemaining && staking.status === 'active' && (
-                        <div className="mt-2 text-xs">
-                          <p className="text-sm font-semibold text-white">{staking.timeRemaining}</p>
-                          {staking.penaltyPeriod && (
-                            <p className="text-red-400">Early withdrawal: {(staking.amount * 0.9).toFixed(4)} SOL (10% fee)</p>
-                          )}
-                          {staking.lockPeriod && (
-                            <p className="text-yellow-400">Locked for another 30 seconds totally 60 seconds</p>
-                          )}
-                          {staking.canGetReward && (
-                            <p className="text-green-400">2x Reward: {(staking.amount * 2).toFixed(4)} SOL</p>
-                          )}
-                        </div>
-                      )}
-                      {staking.status === 'completed' && (
-                        <div className="mt-2 text-xs">
-                          <p className="text-green-400">✅ Withdrawal completed</p>
-                        </div>
+                      {staking.status === "active" && (
+                        <button
+                          onClick={() => handleUnstaking(staking)}
+                          className={`px-3 py-1 rounded text-sm ${
+                            staking.lockPeriod
+                              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                              : staking.penaltyPeriod
+                              ? "bg-orange-600 text-white hover:bg-orange-700"
+                              : "bg-green-600 text-white hover:bg-green-700"
+                          }`}
+                          disabled={staking.lockPeriod}
+                        >
+                          {staking.lockPeriod
+                            ? "Locked"
+                            : staking.penaltyPeriod
+                            ? "Early unstake"
+                            : "unstake"}
+                        </button>
                       )}
                     </div>
-                    {staking.status === 'active' && (
-                      <button 
-                        onClick={() => handleUnstaking(staking)} 
-                        className={`px-3 py-1 rounded text-sm ${
-                          staking.lockPeriod 
-                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                            : staking.penaltyPeriod
-                            ? 'bg-orange-600 text-white hover:bg-orange-700'
-                            : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
-                        disabled={staking.lockPeriod}
-                      >
-                        {staking.lockPeriod ? 'Locked' : 
-                         staking.penaltyPeriod ? 'Early unstake' : 'unstake'}
-                      </button>
-                    )}
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>
