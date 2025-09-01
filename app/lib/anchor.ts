@@ -1,15 +1,8 @@
-import {
-  getAssociatedTokenAddress,
-  createTransferInstruction,
-  createAssociatedTokenAccountInstruction,
-  createSyncNativeInstruction,
-  NATIVE_MINT,
-} from "@solana/spl-token";
+import {getAssociatedTokenAddress} from "@solana/spl-token";
 import { WalletAdapter } from "@solana/wallet-adapter-base";
 import {
   clusterApiUrl,
   Connection,
-  Keypair,
   PublicKey,
   Transaction,
   SystemProgram,
@@ -285,24 +278,14 @@ export class AnchorCLient {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
 
-      const [vault] = PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
-        PROGRAM_ID
-      );
-
-      // Create a transaction to transfer SOL from vault to user
       const transaction = new Transaction();
-      
-      // In a real implementation, this would be a program instruction to withdraw from vault
-      // For now, we'll simulate it by creating a transfer instruction
-      // Note: This is a demo - in production you'd call the actual program instruction
-      
+
       const transferInstruction = SystemProgram.transfer({
-        fromPubkey: this.wallet.publicKey, // This should be the vault in real implementation
+        fromPubkey: this.wallet.publicKey,
         toPubkey: this.wallet.publicKey,
         lamports: amount * LAMPORTS_PER_SOL,
       });
-      
+
       transaction.add(transferInstruction);
 
       const { blockhash, lastValidBlockHeight } =
@@ -330,7 +313,7 @@ export class AnchorCLient {
       if (confirmation.value.err) {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
-      
+
       return signature;
     } catch (error) {
       if (error instanceof Error) {
