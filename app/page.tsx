@@ -7,6 +7,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 import { Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { ArrowBigLeft, Wallet } from "lucide-react";
+import { Typewriter } from "./Components/Typewriter";
 
 const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112";
 
@@ -290,7 +291,7 @@ export default function Home() {
         <div className="max-w-xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-1" style={{fontFamily:"var(--font-display)"}}>
-              Treasury Staking
+              <Typewriter text="Treasury Staking" speed={80} delay={300} />
             </h1>
             <p className="text-gray-300 text-lg">
               Stake your tokens and earn rewards
