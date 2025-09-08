@@ -14,10 +14,10 @@ const DynamicWalletMultiButton = dynamic(
 );
 
 interface WalletConnectProps {
-  onConnect?: (address: String) => void;
+  
 }
 
-export default function WalletConnect({ onConnect }: WalletConnectProps) {
+export default function WalletConnect() {
   const { publicKey, connected } = useWallet();
   const [copied, setCopied] = useState(false);
   const { theme } = useTheme();
@@ -29,11 +29,11 @@ export default function WalletConnect({ onConnect }: WalletConnectProps) {
   const copyAddress = async () => {
     if (!publicKey) return;
     try {
-      await navigator.clipboard.writeText(publicKey.toString());
+      await navigator.clipboard.writeText(publicKey.tostring());
       setCopied(true);
       toast.success("Address copied to clipboard!");
       setTimeout(() => setCopied(false), 5000);
-    } catch (error) {
+    } catch {
       toast.error("Failed to copy address!");
     }
   };

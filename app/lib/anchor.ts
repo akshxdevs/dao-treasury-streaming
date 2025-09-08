@@ -28,10 +28,10 @@ export class AnchorCLient {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
 
-      const [vault] = PublicKey.findProgramAddressSync(
+      // const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
-        PROGRAM_ID
-      );
+        // PROGRAM_ID
+      // );
       return "mock_transaction_signature";
     } catch (error) {
       throw error;
@@ -42,10 +42,10 @@ export class AnchorCLient {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
 
-      const [vault] = PublicKey.findProgramAddressSync(
+      // const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
-        PROGRAM_ID
-      );
+        // PROGRAM_ID
+      // );
 
       const transaction = new Transaction();
       const transferSolInstruction = SystemProgram.transfer({
@@ -69,7 +69,7 @@ export class AnchorCLient {
           preflightCommitment: "confirmed",
           maxRetries: 3,
         }
-      );
+      // );
 
       const confirmation = await this.connection.confirmTransaction({
         signature,
@@ -92,11 +92,11 @@ export class AnchorCLient {
   async withdrawal(mintAddress: string, amount: number) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
-      const mint = new PublicKey(mintAddress);
-      const [vault] = PublicKey.findProgramAddressSync(
+      // const mint = new PublicKey(mintAddress);
+      // const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
-        PROGRAM_ID
-      );
+        // PROGRAM_ID
+      // );
 
       const vaultAccount = await this.connection.getAccountInfo(vault);
       if (!vaultAccount) {
@@ -108,8 +108,8 @@ export class AnchorCLient {
         throw new Error("Unable to get staking time information");
       }
 
-      let withdrawalAmount = amount;
-      let feeAmount = 0;
+      // let withdrawalAmount = amount;
+      // let feeAmount = 0;
 
       if (timeInfo.penaltyPeriod) {
         feeAmount = amount * 0.1;
@@ -123,7 +123,7 @@ export class AnchorCLient {
       const tx = new Transaction();
       const demoVaultAddress = new PublicKey(
         "11111111111111111111111111111112"
-      );
+      // );
 
       const demoInstruction = SystemProgram.transfer({
         fromPubkey: this.wallet.publicKey,
@@ -167,10 +167,10 @@ export class AnchorCLient {
         return null;
       }
 
-      const [vault] = PublicKey.findProgramAddressSync(
+      // const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
-        PROGRAM_ID
-      );
+        // PROGRAM_ID
+      // );
 
       const vaultAccount = await this.connection.getAccountInfo(vault);
       if (!vaultAccount) {
@@ -209,11 +209,11 @@ export class AnchorCLient {
   async getUserBalance(mintAddress: string) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
-      const mint = new PublicKey(mintAddress);
+      // const mint = new PublicKey(mintAddress);
       const userAta = await getAssociatedTokenAddress(
         mint,
         this.wallet.publicKey
-      );
+      // );
       const balance = await this.connection.getTokenAccountBalance(userAta);
       return balance.value.amount;
     } catch (error) {
@@ -224,11 +224,11 @@ export class AnchorCLient {
   async getVaultBalance(mintAddress: string) {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
-      const mint = new PublicKey(mintAddress);
-      const [vault] = PublicKey.findProgramAddressSync(
+      // const mint = new PublicKey(mintAddress);
+      // const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey?.toBuffer()],
-        PROGRAM_ID
-      );
+        // PROGRAM_ID
+      // );
       const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
       const balance = await this.connection.getTokenAccountBalance(vaultAta);
       return balance.value.amount;
@@ -239,11 +239,11 @@ export class AnchorCLient {
 
   async getTreasuryBalance(mintAddress: string) {
     try {
-      const mint = new PublicKey(mintAddress);
+      // const mint = new PublicKey(mintAddress);
       const treasuryAta = await getAssociatedTokenAddress(
         mint,
         TREASURY_ADDRESS
-      );
+      // );
       const balance = await this.connection.getTokenAccountBalance(treasuryAta);
       return balance.value.amount;
     } catch (error) {
@@ -255,11 +255,11 @@ export class AnchorCLient {
     try {
       if (!this.wallet.publicKey) throw new Error("Wallet not connected");
 
-      const mint = new PublicKey(mintAddress);
-      const [vault] = PublicKey.findProgramAddressSync(
+      // const mint = new PublicKey(mintAddress);
+      // const [vault] = PublicKey.findProgramAddressSync(
         [Buffer.from("vault"), this.wallet.publicKey.toBuffer()],
-        PROGRAM_ID
-      );
+        // PROGRAM_ID
+      // );
       const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
 
       const vaultTokenAccount = await this.connection.getAccountInfo(vaultAta);
@@ -302,7 +302,7 @@ export class AnchorCLient {
           preflightCommitment: "confirmed",
           maxRetries: 3,
         }
-      );
+      // );
 
       const confirmation = await this.connection.confirmTransaction({
         signature,
