@@ -128,7 +128,7 @@ export default function Home() {
       const balanceInLamports = await connection.getBalance(publicKey);
       const balance = balanceInLamports / LAMPORTS_PER_SOL;
       setUserBalance(balance);
-    } catch (error) {
+    } catch {
       setUserBalance(0);
     }
   };
@@ -175,7 +175,7 @@ export default function Home() {
       await fetchUserBalance();
 
       toast.success(`Staking successful!`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Transaction failed");
     } finally {
       setStaking(false);
@@ -232,9 +232,9 @@ export default function Home() {
         }
       }
 
-      const tx = await anchorClient.withdrawal(
+      // const tx = await anchorClient.withdrawal(
         MOCK_TOKEN_MINT,
-        stakingRecord.amount
+        // stakingRecord.amount
       );
 
       setUserStaking((prev) =>
@@ -262,7 +262,7 @@ export default function Home() {
       toast.success(
         `Withdrawal successful! You received ${receivedAmount.toFixed(4)} SOL`
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.message || "Transaction failed");
     }
   };
@@ -299,7 +299,7 @@ export default function Home() {
         await fetchUserBalance();
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss();
       toast.error(error.message || "Failed to claim rewards");
     }

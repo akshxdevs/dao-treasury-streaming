@@ -33,7 +33,7 @@ export class AnchorCLient {
         // PROGRAM_ID
       // );
       return "mock_transaction_signature";
-    } catch (error) {
+    } catch {
       throw error;
     }
   }
@@ -81,7 +81,7 @@ export class AnchorCLient {
         throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
       return signature;
-    } catch (error) {
+    } catch {
       if (error instanceof Error) {
         throw new Error(`Transaction failed: ${error.message}`);
       }
@@ -117,7 +117,7 @@ export class AnchorCLient {
       } else if (timeInfo.lockPeriod) {
         throw new Error("Cannot withdraw during lock period (30s - 60s)");
       } else {
-        withdrawalAmount = amount * 2;
+        // withdrawalAmount = amount * 2;
       }
 
       const tx = new Transaction();
@@ -156,7 +156,7 @@ export class AnchorCLient {
       }
 
       return signature;
-    } catch (error) {
+    } catch {
       throw error;
     }
   }
@@ -194,7 +194,7 @@ export class AnchorCLient {
         penaltyPeriod: currentTime < unlockTime,
         lockPeriod: currentTime >= unlockTime && currentTime < rewardTime,
       };
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -216,7 +216,7 @@ export class AnchorCLient {
       // );
       const balance = await this.connection.getTokenAccountBalance(userAta);
       return balance.value.amount;
-    } catch (error) {
+    } catch {
       throw error;
     }
   }
@@ -232,7 +232,7 @@ export class AnchorCLient {
       const vaultAta = await getAssociatedTokenAddress(mint, vault, true);
       const balance = await this.connection.getTokenAccountBalance(vaultAta);
       return balance.value.amount;
-    } catch (error) {
+    } catch {
       throw error;
     }
   }
@@ -246,7 +246,7 @@ export class AnchorCLient {
       // );
       const balance = await this.connection.getTokenAccountBalance(treasuryAta);
       return balance.value.amount;
-    } catch (error) {
+    } catch {
       throw error;
     }
   }
@@ -269,7 +269,7 @@ export class AnchorCLient {
 
       const balance = await this.connection.getTokenAccountBalance(vaultAta);
       return balance.value.amount;
-    } catch (error) {
+    } catch {
       return "0";
     }
   }
@@ -315,7 +315,7 @@ export class AnchorCLient {
       }
 
       return signature;
-    } catch (error) {
+    } catch {
       if (error instanceof Error) {
         throw new Error(`Claim failed: ${error.message}`);
       }
