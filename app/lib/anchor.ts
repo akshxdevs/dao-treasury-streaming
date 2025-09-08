@@ -109,11 +109,11 @@ export class AnchorCLient {
       }
 
       // let withdrawalAmount = amount;
-      // let feeAmount = 0;
+      // // let feeAmount = 0;
 
       if (timeInfo.penaltyPeriod) {
-        feeAmount = amount * 0.1;
-        withdrawalAmount = amount - feeAmount;
+        // feeAmount = amount * 0.1;
+        // withdrawalAmount = amount - feeAmount;
       } else if (timeInfo.lockPeriod) {
         throw new Error("Cannot withdraw during lock period (30s - 60s)");
       } else {
