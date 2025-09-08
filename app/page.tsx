@@ -301,7 +301,7 @@ export default function Home() {
       
     } catch (error: unknown) {
       toast.dismiss();
-      toast.error(error.message || "Failed to claim rewards");
+      toast.error(error instanceof Error ? error.message : "Failed to claim rewards");
     }
   };
 
