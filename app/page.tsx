@@ -232,9 +232,9 @@ export default function Home() {
         }
       }
 
-      // const tx = await anchorClient.withdrawal(
-        MOCK_TOKEN_MINT,
-        // stakingRecord.amount
+      await anchorClient.withdrawal(
+
+
       );
 
       setUserStaking((prev) =>

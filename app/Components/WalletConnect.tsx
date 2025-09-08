@@ -13,10 +13,6 @@ const DynamicWalletMultiButton = dynamic(
   { ssr: false }
 );
 
-interface WalletConnectProps {
-  
-}
-
 export default function WalletConnect() {
   const { publicKey, connected } = useWallet();
   const [copied, setCopied] = useState(false);
@@ -26,10 +22,11 @@ export default function WalletConnect() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
   const copyAddress = async () => {
     if (!publicKey) return;
     try {
-      await navigator.clipboard.writeText(publicKey.tostring());
+      await navigator.clipboard.writeText(publicKey.toString());
       setCopied(true);
       toast.success("Address copied to clipboard!");
       setTimeout(() => setCopied(false), 5000);
