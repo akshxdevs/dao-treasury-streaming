@@ -36,9 +36,7 @@ export const AppBar = () => {
                 <Moon className="h-5 w-5 text-accent"/>
               )}
             </button>
-            <WalletConnect
-              onConnect={(address) => console.log("Connected to", address)}
-            />
+            <WalletConnect />
           </motion.div>
         </div>
       </div>

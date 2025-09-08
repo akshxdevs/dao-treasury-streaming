@@ -10,7 +10,7 @@ import { ArrowBigLeft, Wallet } from "lucide-react";
 import { Typewriter } from "./Components/Typewriter";
 import { useTheme } from "./Components/ThemeProvider";
 
-const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112";
+// const MOCK_TOKEN_MINT = "So11111111111111111111111111111111111111112";
 
 interface StakingRecord {
   id: string;
@@ -176,7 +176,7 @@ export default function Home() {
 
       toast.success(`Staking successful!`);
     } catch (error: unknown) {
-      toast.error(error.message || "Transaction failed");
+      toast.error(error instanceof Error ? error.message : "Transaction failed");
     } finally {
       setStaking(false);
     }
@@ -263,7 +263,7 @@ export default function Home() {
         `Withdrawal successful! You received ${receivedAmount.toFixed(4)} SOL`
       );
     } catch (error: unknown) {
-      toast.error(error.message || "Transaction failed");
+      toast.error(error instanceof Error ? error.message : "Transaction failed");
     }
   };
 
